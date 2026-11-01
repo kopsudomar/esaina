@@ -1,243 +1,256 @@
-# ESAINA — Explainable Essay Assessment Platform
+<div align="center">
 
-Penilaian esai dengan saran AI yang bisa diperiksa: AI menyiapkan draf skor, alasan, kutipan, dan umpan balik — guru yang memutuskan.
+<img src="public/logo-mark.png" alt="Logo ESAINA" width="96" height="96" />
 
-Tim Kopsudomar · INCEPTION 2026 · Subtema: Inclusive Education and Future Skills
+# ESAINA
 
-**Stack:** Next.js 16 · TypeScript · Tailwind v4 · shadcn/ui + Base UI · TanStack Query/Table · NextAuth.js v4 · Prisma 7 · Supabase PostgreSQL · Vitest
+**AI menyiapkan draf skor + alasan + kutipan + feedback — guru memutuskan, siswa melihat hasil yang sudah diterbitkan.**
 
----
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-esaina.web.id-203B50?style=flat-square)](https://esaina.web.id)
+[![CI](https://img.shields.io/github/actions/workflow/status/kopsudomar/esaina/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/kopsudomar/esaina/actions/workflows/ci.yml)
+[![Next.js](https://img.shields.io/badge/Next.js-16.4.3-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Prisma](https://img.shields.io/badge/Prisma-7.10.1-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://www.prisma.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-5299C7?style=flat-square)](LICENSE)
 
-## Masalah & solusi
+</div>
 
-Guru menghabiskan banyak waktu menilai esai, dan alat bantu AI yang ada biasanya memberi satu angka akhir tanpa menjelaskan dasarnya — sulit dipercaya, sulit dikoreksi. Siswa pun sering menerima nilai tanpa tahu bagian mana yang dinilai.
+ESAINA (*Explainable Essay Assessment*) adalah platform penilaian esai yang menempatkan AI sebagai **pemberi saran** dan guru sebagai **pemutus**. Setiap saran membawa skor per kriteria rubrik, alasan, kutipan persis dari jawaban siswa, dan umpan balik — divalidasi ketat di server, lalu dapat dipakai, diubah, atau diabaikan guru. Siswa hanya melihat hasil yang sudah disahkan dan diterbitkan. Dibuat untuk hackathon **INCEPTION 2026** oleh tim **Kopsudomar**, dengan alur penilaian berjalan ujung-ke-ujung dan ter-deploy.
 
-ESAINA memecah penilaian menjadi saran per soal dan per kriteria rubrik. Setiap saran membawa alasan, kutipan persis dari jawaban siswa, dan umpan balik, lalu divalidasi server. Guru dapat memakai, mengubah, atau mengabaikannya, mengesahkan nilai, dan baru setelah itu menerbitkan hasil ke siswa. Total skor selalu dihitung server dari nilai guru.
+**Daftar isi:** [Sorotan](#sorotan) · [Demo](#demo) · [Masalah & Solusi](#masalah--solusi) · [Fitur Utama](#fitur-utama) · [Cara Kerja AI & Validasi](#cara-kerja-ai--validasi) · [Arsitektur](#arsitektur) · [Keamanan & Invarian Produk](#keamanan--invarian-produk) · [Alur Demo 3 Menit](#alur-demo-3-menit) · [Menjalankan Lokal](#menjalankan-lokal) · [Deployment](#deployment) · [Struktur Data](#struktur-data) · [Pengujian & CI](#pengujian--ci) · [Keterbatasan & Roadmap](#keterbatasan--roadmap) · [Tim](#tim) · [AI Use and Third-Party Declaration](#ai-use-and-third-party-declaration) · [Lisensi](#lisensi)
+
+## Sorotan
+
+- **Saran AI yang bisa diperiksa.** Satu saran per pasangan soal × kriteria, lengkap dengan alasan, kutipan persis, dan umpan balik — bukan satu angka tanpa dasar.
+- **Guru tetap pemegang keputusan.** `AIResult` terpisah dari `GradeRevision`; AI tidak bisa mengisi, menimpa, mengesahkan, atau menerbitkan nilai.
+- **Validasi keluaran ketat.** Skema, kelengkapan soal/kriteria, ID asing, rentang skor rubrik, dan keaslian kutipan diperiksa server; retry maksimal 1x, jalur manual selalu tersedia.
+- **Kebenaran data penilaian.** Total skor dihitung server dari nilai guru, nilai kosong ≠ nol, dan nilai Final hanya berubah lewat revisi → sahkan → terbit ulang.
+- **Aman dan teruji.** Otorisasi server pada setiap route, payload siswa memakai allowlist, jawaban diperlakukan sebagai data, `anonCode` dikirim ke LLM; Vitest + CI/CD, live di Vercel + Supabase.
 
 ## Demo
 
 | Item | Tautan |
 |---|---|
-| Aplikasi live | `<isi-url-demo>` |
-| Video demo (≤3 menit) | `<isi-url-video>` |
+| **Live Demo** | https://esaina.web.id |
 | Repositori | https://github.com/kopsudomar/esaina |
 
-Akun demo (hasil seed, data sintetis):
+Akun demo (data sintetis hasil seed):
 
 | Peran | Email | Sandi |
 |---|---|---|
 | Guru | `guru@demo.sch.id` | `demo1234` |
-| Siswa | `s001@demo.sch.id` … `s004@demo.sch.id` | `demo1234` |
+| Siswa | `s001@demo.sch.id` – `s004@demo.sch.id` | `demo1234` |
 | Admin | `admin@demo.sch.id` | `demo1234` |
 
-Status deploy: **belum selesai** (menunggu import repo di Vercel + set env). Lihat `docs-ai/progress.md`.
+Seed menyiapkan dua LJK yang sudah dikumpulkan tanpa nilai (untuk demo penilaian) dan dua siswa yang belum mengerjakan (untuk demo pengerjaan).
 
-Rilis yang dinilai akan ditandai dengan tag **`submission-24h`** (belum dibuat).
+## Masalah & Solusi
 
-## Fitur utama
+Penilaian esai menuntut waktu dan konsistensi: guru membaca ulang, mencocokkan dengan rubrik, dan menulis umpan balik untuk setiap siswa. Alat bantu berbasis AI yang umum menawarkan satu angka akhir tanpa menjelaskan dasarnya — sulit dipercaya, sulit dikoreksi, sulit dipertanggungjawabkan. Di sisi siswa, nilai sering datang tanpa kejelasan bagian mana yang dinilai.
 
-### Guru
-- Kelas dengan kode bergabung; asesmen berisi soal, jawaban acuan, dan rubrik per soal.
-- Buka/tutup asesmen; isi soal dan rubrik terkunci setelah dibuka (perubahan lewat salin menjadi draf baru).
-- Daftar LJK dengan pencarian dan filter status (belum mengumpulkan / dikumpulkan / draf / final / terbit).
-- Halaman penilaian: jawaban siswa di kiri, rubrik dan input nilai di kanan; simpan draf parsial.
-- "Minta saran AI untuk LJK" — draf per soal+kriteria, dengan label AI, alasan, kutipan, feedback.
-- "Gunakan saran AI" per soal (setelah konfirmasi) atau nilai manual; semua nilai tetap bisa diedit.
-- "Sahkan & siswa berikutnya": pengesahan atomik satu LJK, lalu lanjut ke LJK berikutnya yang sudah dikumpulkan dan belum final.
-- Rekap, publikasi LJK Final terpilih, ekspor CSV untuk LJK Final, dan revisi nilai Final (draf baru → sahkan → terbitkan ulang).
-- Riwayat audit: SUBMIT, APPLY_AI, CHANGE_GRADE, APPROVE, PUBLISH, DELETE.
+Konteks masalah ini lazim dibahas dalam literatur penilaian pendidikan, misalnya temuan TALIS 2024 tentang beban administratif guru dan kritik Klein (2002) terhadap penilaian esai berskala besar. Keduanya dipakai sebagai **latar**, bukan hasil uji produk ini.
 
-### Siswa
-- Bergabung kelas dengan kode; melihat asesmen yang dibuka.
-- Isi jawaban per soal, autosave + tombol simpan draf, indikator Menyimpan/Tersimpan/Gagal disimpan.
-- Konfirmasi pengumpulan (menyebut jumlah jawaban kosong); LJK terkunci dalam satu transaksi.
-- Lihat nilai per soal, total, dan umpan balik guru **hanya setelah** hasil diterbitkan.
+ESAINA mengambil posisi berbeda: AI memecah penilaian menjadi saran per kriteria, setiap saran wajib punya bukti kutipan, dan guru tetap mengesahkan. Hasil akhir selalu dapat ditelusuri dari skor, ke kriteria, ke kutipan di jawaban siswa.
 
-### Admin (tambahan)
-- Kelola pengguna (buat, aktif/nonaktif), KPI, dan monitoring progres asesmen.
+## Fitur Utama
 
-### Alur ujung-ke-ujung
-Buat asesmen → siswa mengerjakan & mengumpulkan → guru meminta saran AI → guru meninjau/mengubah → sahkan → terbitkan → siswa melihat hasil.
+| FR | Kapabilitas | Status |
+|---|---|---|
+| FR01 | Autentikasi (NextAuth JWT) dan otorisasi peran: guru, siswa, admin | ✅ |
+| FR02 | Kelas dengan kode bergabung dan keanggotaan kelas | ✅ |
+| FR03–04 | Asesmen, soal, jawaban acuan, rubrik per soal; buka/tutup asesmen | ✅ |
+| FR05–08 | Pengerjaan siswa, autosave, simpan draf, pengumpulan | ✅ |
+| FR09 | Daftar LJK dengan pencarian dan filter status | ✅ |
+| FR10 | Penilaian per kriteria; jawaban di kiri, rubrik dan input nilai di kanan | ✅ |
+| FR11 | Saran AI per soal dan kriteria, dengan alasan, kutipan, dan feedback | ✅ |
+| FR12 | "Gunakan saran AI" per soal setelah konfirmasi | ✅ |
+| FR13 | Pengesahan LJK ("sahkan & siswa berikutnya") dengan total dihitung server | ✅ |
+| FR14 | Rekap dan publikasi LJK Final terpilih | ✅ |
+| FR15 | Hasil siswa dari snapshot terbit (per soal, total, feedback guru) | ✅ |
+| FR16 | Ekspor CSV LJK Final dan revisi nilai Final | ✅ |
+| Tambahan | Admin panel (pengguna, KPI, monitoring) dan audit trail | ✅ |
 
-## Prinsip: AI hanya memberi saran, guru memutuskan
+Guru mengelola kelas, asesmen, rubrik, LJK, penilaian, saran AI, pengesahan, rekap, publikasi, ekspor CSV, dan revisi nilai. Siswa bergabung ke kelas, mengerjakan dengan autosave, mengumpulkan, lalu melihat hasil setelah terbit. Admin mengelola pengguna dan memantau progres asesmen.
 
-`AIResult` disimpan terpisah dari `GradeRevision`. AI tidak dapat mengisi, menimpa, mengesahkan, atau menerbitkan nilai. Saran yang gagal validasi tidak dapat diterapkan; jalur manual selalu tersedia.
+## Cara Kerja AI & Validasi
 
-Invarian produk yang dijaga di kode:
+AI diminta mengembalikan JSON dengan satu item untuk setiap pasangan soal × kriteria:
 
-| Invarian | Penerapan |
-|---|---|
-| Otorisasi di server setiap route | Guard sesi + peran + kepemilikan kelas di Route Handler dan layout; `proxy.ts` hanya redirect optimistik |
-| Allowlist payload siswa | DTO allowlist; acuan, rubrik internal, draf AI, dan nilai siswa lain tidak pernah dikirim |
-| Total skor dihitung server | Diturunkan dari `GradeItem` milik guru, bukan dari model atau klien |
-| Validasi keluaran AI | Skema/tipe benar, tiap soal & kriteria tepat sekali, tanpa ID asing, skor sesuai rubrik, `evidence` kutipan persis (normalisasi whitespace); retry maksimal 1x |
-| Nilai kosong ≠ nol | Siswa belum mengumpulkan tidak diberi nol dan tidak diekspor sebagai nol |
-| Konkurensi | Mutasi membawa `expected_version` → 409 saat konflik; submit/approve/publish memakai transaksi + idempotency key |
+```json
+{
+  "items": [
+    {
+      "questionId": "q1",
+      "criterionId": "c1",
+      "score": 3,
+      "evidence": "Pendidikan inklusif memastikan setiap anak memperoleh kesempatan yang sama.",
+      "rationale": "Kutipan menunjukkan pemahaman inti konsep inklusi.",
+      "feedback": "Perkuat dengan contoh penerapan di kelas."
+    }
+  ]
+}
+```
+
+Aturan validasi sebelum saran boleh dipakai:
+
+- Skema dan tipe keluaran benar; `score` bilangan bulat dalam rentang kriteria.
+- Setiap soal dan setiap kriteria muncul tepat sekali — tidak kurang, tidak berlebih.
+- Tidak ada ID asing di luar soal/kriteria asesmen tersebut.
+- `evidence` adalah kutipan persis dari jawaban siswa (perbandingan dengan normalisasi whitespace) atau string kosong.
+- Retry otomatis maksimal 1x; bila gagal, saran ditolak dan jalur penilaian manual tetap berfungsi.
+- Nilai guru tidak pernah ditimpa otomatis: apply AI hanya menambah item AI, tidak menghapus item manual.
+- Jawaban dikirim sebagai data dengan kode anonim (`anonCode`), bukan nama/email; instruksi di dalam jawaban diabaikan.
 
 ## Arsitektur
 
 ```
-Browser (guru/siswa/admin)
-   │  Next.js App Router (RSC + Route Handlers)
-   │  ├─ auth + guard peran/kepemilikan  → NextAuth (JWT)
-   │  ├─ validasi AI + prompt + adapter   → LLM API (provider via env)
-   │  └─ grading / publikasi / revisi
-   └─ Prisma 7 (@prisma/adapter-pg) ──→ Supabase PostgreSQL (TLS + root CA)
+Guru                        Siswa                     Hasil
+ │  kelas/asesmen/soal/rubrik │  gabung kelas            │
+ │  buka asesmen ────────────►│  isi jawaban (autosave)  │
+ │                            │  kumpulkan ──┐           │
+ │  minta saran AI ◄──────────┘             │           │
+ │  validasi ketat di server                │           │
+ │  tinjau / ubah per soal                  │           │
+ │  sahkan (FINAL, total server) ◄──────────┘           │
+ │  rekap → terbitkan ────────────────────────────────►│
+ │  revisi: draf baru → sahkan → terbit ulang ────────►│
 ```
 
-Kunci LLM dan kredensial DB hanya di server. Saran AI berjalan sinkron dalam request; job-lock per LJK masih per-proses.
-
-### Struktur folder (kondisi repo)
-
 ```
-prisma/
-  schema.prisma            model data + enum
-  migrations/              migrasi SQL
-  seed.ts                  data demo (guru, siswa, admin, kelas, asesmen)
 src/
-  app/
-    login/                 halaman masuk
-    guru/                  kelas, asesmen, submissions, grading, rekap
-    siswa/                 kelas, assessment/[id], results/[id]
-    admin/                 users, monitoring
-    api/
-      auth/[...nextauth]/  NextAuth handler
-      classes/             buat, gabung, daftar, detail
-      assessments/         CRUD, open, submissions, submit, work, export, publish
-      submissions/[id]/    detail, ai, ai/apply, grade, grade/finalize, grade/revise
-      student/results/     hasil terbit (allowlist DTO)
-      admin/               users, monitoring
-  components/
-    ui/                    komponen Neumorphism UI (Base UI + Tailwind v4)
-    app-sidebar.tsx        navigasi per peran
-  lib/
-    auth/                  konfigurasi NextAuth + guard
-    ai/                    adapter LLM, prompt v1, test
-    validations/           skema Zod asesmen
-    grading.ts             hitung total
-    prisma.ts              klien Prisma + TLS Supabase
-    api-client.ts          fetch client + timeout
-  hooks/, generated/       hook UI, Prisma Client hasil generate
-.github/workflows/ci.yml   typecheck, lint, test, build, migrate deploy
-docs-ai/                   brief, PRD, arsitektur, tugas, progress
+  app/          # App Router: halaman + Route Handler (admin, guru, siswa, login, api)
+  lib/ai/       # adapter LLM, prompt, validasi keluaran
+  lib/auth/     # NextAuth, guard sesi/peran, tipe sesi
+  lib/validations/  # skema Zod
+  lib/grading.ts    # perhitungan skor server, provenance item
+  lib/prisma.ts     # Prisma Client + adapter pg + TLS Supabase
+  components/   # UI (Base UI / Radix, shadcn-style)
+prisma/         # schema.prisma, migrations/, seed.ts
+.github/workflows/ci.yml
 ```
 
-## Menjalankan lokal
+Stack: Next.js 16.4.3 (App Router), React 19.3.0, TypeScript 5, Tailwind CSS 4, shadcn/ui + Base UI + Radix UI, TanStack Query 5 / Table 8, NextAuth 4.24.15 (JWT), Prisma 7.10.1 + `@prisma/adapter-pg`, PostgreSQL (Supabase), Zod 4, Vitest 5, pnpm 10.33.2, Node 22+. Antarmuka berbahasa Indonesia dengan glassmorphism ringan dan palet navy `#203B50` / biru `#5299C7`.
 
-Prasyarat: Node.js 22+, pnpm 10, database PostgreSQL (Supabase atau lokal).
+## Keamanan & Invarian Produk
 
-```bash
-pnpm install
-cp .env.example .env.local
-# isi nilai di .env.local (jangan commit)
-pnpm db:migrate      # prisma migrate dev
-pnpm db:generate     # prisma generate
-pnpm db:seed         # opsional: data demo
-pnpm dev
-```
+| Invarian | Penerapan |
+|---|---|
+| Otorisasi di server pada setiap route | Sesi, peran, kepemilikan kelas, dan keanggotaan kelas diperiksa di Route Handler; `proxy.ts` hanya redirect optimistik |
+| Allowlist payload siswa | DTO allowlist; jawaban acuan, rubrik internal, draf AI, dan nilai siswa lain tidak pernah dikirim |
+| AI hanya memberi saran | `AIResult` terpisah dari `GradeRevision`; AI tidak mengisi, menimpa, mengesahkan, atau menerbitkan |
+| Total skor dihitung server | Diturunkan dari `GradeItem` milik guru, bukan dari model atau klien |
+| Validasi keluaran AI | Skema benar, tiap soal & kriteria tepat sekali, tanpa ID asing, skor sesuai rentang rubrik, `evidence` kutipan persis; retry maks 1x |
+| Nilai kosong ≠ nol | `GradeItem.score` nullable; siswa belum mengumpulkan tidak diberi nol dan tidak diekspor sebagai nol |
+| Nilai Final tidak bisa diedit langsung | Revisi membuka draf baru → sahkan → terbitkan ulang; versi terbit lama tetap tampil sampai revisi diterbitkan |
+| Konkurensi | Mutasi membawa `expected_version`; konflik → 409 |
+| Idempotensi | `IdempotencyKey` untuk submit, approve, publish — klik ganda menghasilkan satu hasil |
+| Privasi & prompt injection | Jawaban dikirim ke LLM dengan `anonCode`; jawaban adalah data, bukan instruksi; teks jawaban tidak masuk log operasional |
 
-Buka `http://localhost:3000`.
+## Alur Demo 3 Menit
 
-### Variabel environment
+| Waktu | Skenario |
+|---|---|
+| 0:00–0:30 | Masuk sebagai guru; buka kelas, asesmen, dan rubrik |
+| 0:30–1:10 | Masuk sebagai siswa; isi jawaban (autosave) dan kumpulkan |
+| 1:10–1:50 | Guru meminta draf AI; tinjau alasan, kutipan, dan feedback per soal; koreksi bila perlu |
+| 1:50–2:25 | Sahkan LJK dan lihat rekap |
+| 2:25–3:00 | Terbitkan hasil; siswa melihat nilai per soal, total, dan feedback |
+
+## Menjalankan Lokal
+
+Prasyarat: **Node.js 22+**, **pnpm 10.33.2** (atau `corepack enable`), dan **PostgreSQL** (Supabase atau lokal).
 
 | Variabel | Kegunaan |
 |---|---|
-| `DATABASE_URL` | Connection string PostgreSQL (pooler) untuk runtime |
+| `DATABASE_URL` | Koneksi PostgreSQL runtime (Supabase pooler) |
 | `DIRECT_URL` | Koneksi langsung untuk migrasi Prisma |
-| `SUPABASE_CA_B64` | Root CA Supabase, base64 satu baris (TLS serverless) |
-| `NEXTAUTH_URL` | URL aplikasi untuk NextAuth |
-| `NEXTAUTH_SECRET` | Secret sesi (≥32 karakter acak) |
-| `LLM_PROVIDER` | Nama provider pada adapter (mis. `openai-compatible`, `gemini`) |
-| `LLM_MODEL` | ID model yang dipakai |
-| `LLM_API_KEY` | Kunci API LLM (hanya server) |
-| `LLM_BASE_URL` | Base URL endpoint LLM |
+| `SUPABASE_CA_B64` | Root CA Supabase dalam base64 (TLS di serverless) |
+| `NEXTAUTH_URL` | URL aplikasi, mis. `http://localhost:3000` |
+| `NEXTAUTH_SECRET` | Rahasia sesi, minimal 32 karakter acak |
+| `LLM_PROVIDER` | Nama provider adapter, mis. `openai-compatible` |
+| `LLM_MODEL` | Model yang dipakai |
+| `LLM_API_KEY` | Kunci API penyedia LLM |
+| `LLM_BASE_URL` | Base URL endpoint LLM yang kompatibel dengan API chat completions |
 
-Nilai rahasia tidak boleh di-commit. `.env.example` hanya berisi placeholder.
+```bash
+pnpm install
+cp .env.example .env.local     # isi variabel di atas
+pnpm db:migrate                # atau: pnpm prisma migrate deploy
+pnpm db:seed                   # data demo sintetis
+pnpm dev                       # http://localhost:3000
+```
 
-## Perintah
-
-| Perintah | Fungsi |
-|---|---|
-| `pnpm dev` | Server pengembangan |
-| `pnpm build` | Build produksi |
-| `pnpm start` | Jalankan hasil build |
-| `pnpm typecheck` | `tsc --noEmit` |
-| `pnpm lint` | ESLint |
-| `pnpm test` | Vitest (unit test) |
-| `pnpm db:migrate` | `prisma migrate dev` |
-| `pnpm db:generate` | `prisma generate` |
-| `pnpm db:seed` | Seed data demo |
-
-## Alur demo 3 menit
-
-| Waktu | Aksi |
-|---|---|
-| 0:00–0:25 | Guru membuka kelas, asesmen, dan rubrik |
-| 0:25–0:55 | Siswa mengisi dan mengumpulkan LJK |
-| 0:55–1:55 | Guru membuka LJK, minta draf AI, koreksi nilai per soal |
-| 1:55–2:30 | Sahkan LJK, lanjut siswa berikutnya, tampilkan rekap |
-| 2:30–3:00 | Terbitkan hasil; buka nilai dan umpan balik di akun siswa |
-
-Data demo sintetis (kode siswa seperti S001), bukan identitas nyata.
-
-## Struktur data ringkas
-
-| Model | Isi |
-|---|---|
-| `User` (`Role`: TEACHER/STUDENT/ADMIN) | Akun, `anonCode` untuk LLM, `isActive`, `identifier` (NIP/NIS) |
-| `Class` / `ClassMembership` | Kelas + kode bergabung, keanggotaan siswa |
-| `Assessment` | Judul, instruksi, status DRAFT/OPEN/CLOSED, `version` |
-| `Question` | Soal, `referenceAnswer` (tidak pernah dikirim ke siswa), `maxScore` |
-| `RubricCriterion` | Kode kriteria, deskripsi, rentang skor, level (JSON) |
-| `Submission` / `Answer` | Satu LJK per siswa per asesmen; jawaban ber-`version` |
-| `AIResult` | Payload saran AI, provider/model/promptVersion, `cacheKey`, status validasi |
-| `GradeRevision` / `GradeItem` | Draf/Final, `totalScore`, item per kriteria dengan `source` MANUAL/AI |
-| `Publication` | Menunjuk satu `GradeRevision` Final yang diterbitkan |
-| `AuditEvent`, `IdempotencyKey` | Jejak perubahan dan proteksi klik ganda |
-
-## Keamanan & privasi
-
-- **Anonimisasi ke LLM:** hanya `User.anonCode` yang dikirim, bukan nama atau email.
-- **Jawaban siswa = data, bukan instruksi:** prompt memisahkan konten jawaban dari instruksi sistem.
-- **Tanpa log jawaban:** teks jawaban tidak ditulis ke log operasional.
-- **DTO allowlist:** payload siswa dibatasi field hasil terbit; acuan, rubrik internal, dan draf AI tidak ikut.
-- **Otorisasi server:** setiap route memeriksa sesi, peran, dan kepemilikan; guru tidak bisa mengakses kelas guru lain; siswa lain mendapat 404.
-- **TLS DB:** verifikasi penuh memakai root CA Supabase, bukan menonaktifkan verifikasi.
+Perintah lain: `pnpm build`, `pnpm start`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm db:generate`. Tanpa `LLM_API_KEY`, seluruh alur manual tetap berjalan; tombol saran AI akan melaporkan bahwa LLM belum dikonfigurasi.
 
 ## Deployment
 
-Vercel (Next.js) + Supabase (PostgreSQL).
+Aplikasi berjalan di **Vercel** dengan **Supabase PostgreSQL**.
 
-1. Import repo di Vercel; set semua variabel env produksi (tanpa `sslmode` di URI, `SUPABASE_CA_B64` wajib).
-2. Jalankan `pnpm prisma migrate deploy` (CI melakukannya otomatis saat push ke `main` dengan secret `DIRECT_URL`).
-3. Smoke test: login guru dan siswa, alur nilai → sahkan → terbit → hasil siswa.
+1. Import repositori di Vercel (framework terdeteksi Next.js); `pnpm install` menjalankan `prisma generate` lewat `postinstall`.
+2. Set env produksi: `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_CA_B64`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, `LLM_BASE_URL`.
+3. Jalankan `pnpm prisma migrate deploy` (otomatis lewat job `migrate` pada push ke `main`, memakai secret `DIRECT_URL`).
+4. Smoke test: login guru dan siswa, buka asesmen, isi dan kumpulkan jawaban, minta saran AI, sahkan, terbitkan, cek halaman hasil siswa.
 
-## Keterbatasan & roadmap
+`SUPABASE_CA_B64` dipakai karena serverless tidak punya akses file yang andal untuk CA; connection string produksi ditulis tanpa `sslmode` agar opsi TLS aplikasi tidak diabaikan.
 
-- Endpoint AI **belum diuji dengan LLM asli** (API key kosong); validasi diuji unit test.
-- Job-lock "satu job AI per LJK" masih per-proses, bukan advisory lock DB.
-- `GradeRevision.totalScore` tidak nullable, sehingga draf parsial tampil sebagai jumlah parsial.
-- Ekspor CSV untuk soal dengan lebih dari satu kriteria baru mengekspor satu nilai.
-- Belum ada hasil uji pilot; klaim penghematan waktu/akurasi AI masih hipotesis.
-- Tanpa OCR dan tanpa fine-tuning; antarmuka bahasa Indonesia saja.
-- CI/CD: GitHub Actions menjalankan typecheck, lint, test, build, dan migrasi.
-- Belum ada tag rilis `submission-24h`, video demo, maupun pitch deck.
+## Struktur Data
 
-## Tim Kopsudomar
-
-| Nama | Peran |
+| Model | Kegunaan |
 |---|---|
-| Jauza Aida A. | Ketua, UI/UX (UPN "Veteran" Jawa Timur) |
-| Achmad Lutfi Madhani | Full-stack (UTM) |
-| Abdul Rohman Maulidhi | Full-stack (Unesa) |
+| `User` | Akun guru/siswa/admin; `anonCode` untuk anonimisasi ke LLM |
+| `Class` | Kelas milik guru dengan kode bergabung |
+| `ClassMembership` | Keanggotaan siswa pada kelas |
+| `Assessment` | Asesmen dalam kelas, status buka/tutup |
+| `Question` | Soal, bobot, dan `referenceAnswer` (tidak pernah dikirim ke siswa) |
+| `RubricCriterion` | Kriteria rubrik per soal dengan rentang skor |
+| `Submission` | LJK siswa beserta status pengerjaan |
+| `Answer` | Jawaban siswa per soal, mendukung autosave |
+| `AIResult` | Keluaran AI tersimpan terpisah dengan payload per kriteria |
+| `GradeRevision` | Revisi nilai (DRAFT/FINAL) beserta versi untuk konkurensi |
+| `GradeItem` | Nilai per soal × kriteria; `score` nullable, sumber MANUAL/AI |
+| `Publication` | Snapshot hasil yang diterbitkan ke siswa |
+| `AuditEvent` | Jejak audit: SUBMIT, APPLY_AI, CHANGE_GRADE, APPROVE, PUBLISH, DELETE |
+| `IdempotencyKey` | Satu hasil untuk submit/approve/publish yang berulang |
 
-Lisensi: lihat `LICENSE`.
+## Pengujian & CI
+
+```bash
+pnpm test        # Vitest (10 berkas test di src/**/*.test.ts)
+pnpm typecheck   # tsc --noEmit
+pnpm lint        # ESLint
+pnpm build       # next build
+```
+
+Yang diuji: guard auth dan peran, validasi skema asesmen, perhitungan skor server, kode kelas, adapter LLM (error HTTP, timeout, fallback tanpa `response_format`), prompt dan validator AI (kutipan palsu, ID asing, skor di luar rentang), route admin monitoring, ekspor CSV, kepemilikan kelas, dan route apply saran AI.
+
+CI di `.github/workflows/ci.yml` (workflow `CI/CD`) menjalankan build, typecheck, lint, dan test pada setiap pull request dan push ke `main`; job `migrate` menjalankan `prisma migrate deploy` hanya pada push ke `main`.
+
+## Keterbatasan & Roadmap
+
+Keterbatasan yang diketahui: belum ada uji pilot di kelas nyata (seluruh data demo sintetis); antarmuka dan prompt hanya berbahasa Indonesia; tanpa OCR sehingga jawaban harus diketik; endpoint AI belum diuji dengan penyedia LLM asli pada build terakhir (kunci API kosong, validasi diuji lewat unit test); job-lock "satu job AI per LJK" masih per-proses; `totalScore` tidak nullable sehingga draf parsial menyimpan jumlah parsial; ekspor CSV untuk soal dengan lebih dari satu kriteria hanya menampilkan satu nilai; audit kontras dan aksesibilitas menyeluruh belum dilakukan.
+
+Roadmap: uji dengan LLM asli dan penyedia kedua; migrasi job-lock ke advisory lock DB plus rate limit per akun; `totalScore` nullable dan ekspor CSV per kriteria; impor CSV soal dan rubrik; audit aksesibilitas seluruh halaman (target WCAG AA).
+
+## Tim
+
+**Kopsudomar** — hackathon INCEPTION 2026.
+
+| Anggota | Peran |
+|---|---|
+| Jauza | UI/UX |
+| Lutfi | Full-stack |
+| Abdul | Full-stack |
 
 ## AI Use and Third-Party Declaration
 
-- **Peran AI di produk:** menyiapkan saran skor, alasan, kutipan, dan umpan balik per kriteria. Guru menetapkan, mengubah, mengesahkan, dan menerbitkan nilai. AI tidak pernah menulis nilai final.
-- **Provider & model LLM:** dikonfigurasi lewat `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`. Model yang benar-benar dipakai pada demo: `<isi-provider-dan-versi-model>` (belum diverifikasi dengan API key asli).
-- **Bantuan AI dalam pengembangan:** agen coding (OpenCode) dipakai untuk scaffolding, refactor, dan penulisan test; keputusan produk, desain, dan verifikasi akhir dilakukan tim.
-- **Pustaka & lisensi:** Next.js, React, Tailwind CSS, shadcn/ui + Base UI, Radix UI, TanStack Query/Table, NextAuth.js, Prisma, Zod, bcryptjs, Vitest, lucide-react, sonner, Pretendard (font).
-- **Layanan pihak ketiga:** penyedia LLM API, Vercel, Supabase.
-- **Data:** seluruh data demo sintetis; identitas diganti kode anonim sebelum dikirim ke LLM.
+1. **Peran AI di produk.** AI dipakai sebagai pemberi saran penilaian: menyusun draf skor per kriteria rubrik beserta alasan, kutipan dari jawaban siswa, dan umpan balik. AI tidak menetapkan nilai akhir, tidak mengesahkan, dan tidak menerbitkan hasil; keputusan sepenuhnya ada pada guru. Setiap keluaran divalidasi di server dan disimpan terpisah dari nilai guru.
+2. **Provider dan model.** Adapter LLM dapat dikonfigurasi lewat `LLM_PROVIDER`, `LLM_MODEL`, `LLM_BASE_URL`, dan `LLM_API_KEY`, memakai protokol chat completions yang umum. Provider dan model dibaca dari environment, bukan ditulis tetap di kode. Nilai kunci API tidak disertakan dalam repositori maupun dokumen ini.
+3. **Bantuan AI dalam pengembangan.** Asisten AI (coding agent) digunakan untuk membantu penulisan kode, refactor, penulisan test, dan penyusunan dokumentasi. Semua keluaran ditinjau, dijalankan, dan diverifikasi anggota tim melalui typecheck, lint, test, dan pengujian manual; keputusan arsitektur dan produk diambil oleh tim.
+4. **Pustaka dan lisensi.** Proyek memakai pustaka sumber terbuka: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Base UI, Radix UI, TanStack Query, TanStack Table, NextAuth.js, Prisma, Zod, bcryptjs, Sonner, lucide-react, dan Vitest, masing-masing dengan lisensinya sendiri. Kode proyek ini dirilis dengan lisensi MIT.
+5. **Layanan pihak ketiga.** Hosting di Vercel, basis data PostgreSQL di Supabase, penyimpanan kode di GitHub, dan penyedia LLM dengan API chat completions untuk fitur saran AI. Tidak ada layanan analitik atau pelacakan pihak ketiga.
+6. **Data sintetis dan anonimisasi.** Seluruh akun, kelas, asesmen, dan jawaban pada demo adalah data sintetis hasil seed, bukan data siswa nyata. Saat fitur AI dipakai, jawaban dikirim ke LLM dengan kode anonim (`anonCode`), tanpa nama atau email, dan teks jawaban tidak ditulis ke log operasional.
+
+## Lisensi
+
+Dirilis dengan lisensi [MIT](LICENSE). © 2026 Kopsudomar.
