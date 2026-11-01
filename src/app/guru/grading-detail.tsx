@@ -7,7 +7,13 @@ import { api, HttpError } from "@/lib/api-client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -58,7 +64,22 @@ type Item = {
   feedback: string;
 };
 
-type AiPayload = { id: string; payload: unknown };
+type AiSuggestionItem = {
+  questionId: string;
+  criterionId: string;
+  score: number;
+  evidence: string;
+  rationale: string;
+  feedback: string;
+};
+
+type AiResult = {
+  id: string;
+  payload: { items: AiSuggestionItem[] };
+  provider: string;
+  model: string;
+  promptVersion: string;
+};
 
 function errorMessage(error: unknown, fallback: string) {
   return error instanceof HttpError ? error.message : fallback;
@@ -72,6 +93,15 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
   });
   const revision = query.data?.gradeRevisions[0];
   const [items, setItems] = useState<Item[]>([]);
+  const [aiResult, setAiResult] = useState<AiResult | null>(null);
+  const [aiCached, setAiCached] = useState(false);
+  const [prevSubmissionId, setPrevSubmissionId] = useState(submissionId);
+
+  if (prevSubmissionId !== submissionId) {
+    setPrevSubmissionId(submissionId);
+    setAiResult(null);
+    setAiCached(false);
+  }
 
   const currentItems =
     items.length > 0
@@ -118,22 +148,13 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
 
   const ai = useMutation({
     mutationFn: () =>
-      api.post<{ aiResult: AiPayload; cached: boolean }>(
+      api.post<{ aiResult: AiResult; cached: boolean }>(
         `/api/submissions/${submissionId}/ai`,
       ),
-    onMutate: () => applyAi.reset(),
-    onSuccess: (data) => applyAi.mutate(data.aiResult.id),
-  });
-
-  const applyAi = useMutation({
-    mutationFn: (aiResultId: string) =>
-      api.post(`/api/submissions/${submissionId}/ai/apply`, {
-        aiResultId,
-        version: query.data?.version,
-      }),
-    onSuccess: () => {
-      setItems([]);
-      void query.refetch();
+    onMutate: () => setAiResult(null),
+    onSuccess: (data) => {
+      setAiResult(data.aiResult);
+      setAiCached(data.cached);
     },
   });
 
@@ -170,6 +191,18 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
         x.criterionId === criterionId ? { ...x, ...patch } : x,
       ),
     );
+  const applySuggestion = (suggestion: AiSuggestionItem) =>
+    update(suggestion.criterionId, {
+      score: suggestion.score,
+      feedback: suggestion.feedback,
+    });
+  const applyAllSuggestions = () => {
+    if (!aiResult) return;
+    for (const s of aiResult.payload.items) {
+      update(s.criterionId, { score: s.score, feedback: s.feedback });
+    }
+  };
+
   const total = currentItems.reduce((sum, x) => sum + (x.score ?? 0), 0);
   const maxTotal = detail.assessment.questions.reduce(
     (sum, q) => sum + q.criteria.reduce((cs, c) => cs + c.maxScore, 0),
@@ -179,8 +212,8 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
   const final = revision?.status === "FINAL";
   const published = Boolean(revision?.publications.length);
   const hasUnpublishedChanges = final && !published;
-  const aiBusy = ai.isPending || applyAi.isPending;
-  const aiError = applyAi.error ?? ai.error;
+  const aiBusy = ai.isPending;
+  const aiError = ai.error;
   const mutationError =
     [save.error, finalize.error, revise.error].find(Boolean) ?? aiError;
 
@@ -221,6 +254,45 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
           </div>
         </CardContent>
       </Card>
+
+      {aiResult ? (
+        <Card variant="soft" role="status">
+          <CardHeader className="gap-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-sm uppercase tracking-wide text-[var(--neu-accent-ink)]">
+                Saran AI siap ditinjau
+              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="primary">
+                  {aiResult.provider} · {aiResult.model}
+                </Badge>
+                {aiCached ? <Badge variant="soft">Dari cache</Badge> : null}
+              </div>
+            </div>
+            <CardDescription>
+              {aiResult.payload.items.length} kriteria punya usulan skor. Tinjau
+              kutipan dan alasan sebelum memakai — nilai tetap milik Anda.
+            </CardDescription>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="soft"
+                disabled={final}
+                onClick={applyAllSuggestions}
+              >
+                Gunakan semua saran
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setAiResult(null)}
+              >
+                Tutup saran
+              </Button>
+            </div>
+          </CardHeader>
+        </Card>
+      ) : null}
 
       {hasUnpublishedChanges ? (
         <Alert role="status">
@@ -274,6 +346,9 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
                   score !== null &&
                   (score < c.minScore || score > c.maxScore);
                 const feedbackId = `feedback-${c.id}`;
+                const suggestion = aiResult?.payload.items.find(
+                  (s) => s.criterionId === c.id && s.questionId === q.id,
+                );
                 return (
                   <div className="flex flex-col gap-2" key={c.id}>
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -324,6 +399,41 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
                         Skor harus {c.minScore}–{c.maxScore}
                       </p>
                     ) : null}
+                    {suggestion ? (
+                      <div className="rounded-[var(--neu-radius-control)] border-l-2 border-[var(--neu-accent-ink)] bg-[var(--neu-surface-soft)] px-3 py-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-[var(--neu-accent-ink)]">
+                            Saran AI · {suggestion.score} poin
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="soft"
+                            disabled={final}
+                            onClick={() => applySuggestion(suggestion)}
+                          >
+                            Gunakan
+                          </Button>
+                        </div>
+                        {suggestion.evidence ? (
+                          <blockquote className="mt-2 border-l-2 border-[var(--border)] pl-2 text-sm italic text-[var(--foreground)]">
+                            “{suggestion.evidence}”
+                          </blockquote>
+                        ) : null}
+                        {suggestion.rationale ? (
+                          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+                            {suggestion.rationale}
+                          </p>
+                        ) : null}
+                        {suggestion.feedback ? (
+                          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+                            <span className="font-medium text-[var(--foreground)]">
+                              Usulan feedback:{" "}
+                            </span>
+                            {suggestion.feedback}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
@@ -332,7 +442,7 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
         </section>
       ))}
 
-      <div className="sticky bottom-0 z-10 mt-2 flex flex-col gap-2 border-t border-[color:var(--border)] bg-[var(--background)]/95 px-1 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="sticky bottom-0 z-10 mt-2 flex flex-col gap-2 border-t border-[color:var(--border)] bg-[var(--neu-surface)]/95 px-1 py-3 shadow-[var(--neu-shadow-raised)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-0.5 text-sm">
           <span className="font-medium tabular-nums">
             Total {total} dari {maxTotal}
@@ -354,9 +464,14 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
             type="button"
             variant="soft"
             disabled={final || aiBusy}
+            aria-busy={aiBusy || undefined}
             onClick={() => ai.mutate()}
           >
-            {aiBusy ? "Menyiapkan saran AI…" : "Sarankan skor AI"}
+            {aiBusy
+              ? "Menyiapkan saran AI…"
+              : aiResult
+                ? "Minta saran AI lagi"
+                : "Sarankan skor AI"}
           </Button>
           {final ? (
             <Button
@@ -394,12 +509,6 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
       {finalize.isSuccess && finalize.data?.nextSubmissionId ? (
         <p role="status" className="text-sm text-[var(--muted-foreground)]">
           Beralih ke LJK berikutnya…
-        </p>
-      ) : null}
-
-      {applyAi.isSuccess && !mutationError ? (
-        <p role="status" className="text-sm text-[var(--muted-foreground)]">
-          Saran AI diterapkan. Periksa dan sesuaikan skor.
         </p>
       ) : null}
 

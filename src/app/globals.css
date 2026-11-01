@@ -56,9 +56,9 @@
   --neu-font-sans: "Pretendard Variable", Pretendard, sans-serif;
   --neu-font-mono: Consolas, monospace;
 
-  --background: #eef5fc;
+  --background: #e4eef9;
   --foreground: #1c3247;
-  --card: #eef5fc;
+  --card: #f2f8fe;
   --card-foreground: #1c3247;
   --popover: #f4f9fe;
   --popover-foreground: #1c3247;
@@ -78,24 +78,24 @@
   --input: rgb(32 59 80 / 0.14);
   --ring: #5299c7;
 
-  --neu-surface: #eef5fc;
-  --neu-surface-soft: #f4f9fe;
-  --neu-surface-low: #e2eef8;
-  --neu-edge: transparent;
+  --neu-surface: #f2f8fe;
+  --neu-surface-soft: #f8fcff;
+  --neu-surface-low: #d8e7f6;
+  --neu-edge: rgb(32 59 80 / 0.12);
   --neu-accent-ink: #2f6f9e;
   --neu-shadow-dark: rgb(32 59 80 / 0.20);
   --neu-shadow-light: rgb(255 255 255 / 0.95);
   --neu-shadow-raised:
     -1px -1px 0px 0px color-mix(in srgb, rgb(255 255 255 / 0.95) 82%, transparent),
-    6px 6px 14px color-mix(in srgb, rgb(32 59 80 / 0.20) 92%, transparent),
+    6px 6px 14px color-mix(in srgb, rgb(32 59 80 / 0.12) 92%, transparent),
     -6px -6px 14px color-mix(in srgb, rgb(255 255 255 / 0.95) 74%, transparent);
   --neu-shadow-raised-sm:
     -1px -1px 0px 0px color-mix(in srgb, rgb(255 255 255 / 0.95) 82%, transparent),
-    2px 2px 7px color-mix(in srgb, rgb(32 59 80 / 0.20) 92%, transparent),
+    2px 2px 7px color-mix(in srgb, rgb(32 59 80 / 0.12) 92%, transparent),
     -2px -2px 7px color-mix(in srgb, rgb(255 255 255 / 0.95) 64%, transparent);
   --neu-shadow-hover:
     -1px -1px 0px 0px color-mix(in srgb, rgb(255 255 255 / 0.95) 82%, transparent),
-    3px 3px 10px color-mix(in srgb, rgb(32 59 80 / 0.20) 92%, transparent),
+    3px 3px 10px color-mix(in srgb, rgb(32 59 80 / 0.12) 92%, transparent),
     -3px -3px 10px color-mix(in srgb, rgb(255 255 255 / 0.95) 64%, transparent);
   --neu-shadow-inset:
     inset 2px 2px 7px rgb(32 59 80 / 0.20),
@@ -104,9 +104,9 @@
     inset 1px 1px 3px rgb(32 59 80 / 0.20),
     inset -1px -1px 3px rgb(255 255 255 / 0.95);
   --neu-shadow-plate:
-    1px 2px 3px -1px color-mix(in srgb, rgb(32 59 80 / 0.20) 92%, transparent),
+    1px 2px 3px -1px color-mix(in srgb, rgb(32 59 80 / 0.12) 92%, transparent),
     -1px -1px 0px 0px color-mix(in srgb, rgb(255 255 255 / 0.95) 82%, transparent),
-    4px 4px 10px -2px color-mix(in srgb, rgb(32 59 80 / 0.20) 92%, transparent),
+    4px 4px 10px -2px color-mix(in srgb, rgb(32 59 80 / 0.12) 92%, transparent),
     -3px -3px 7px -1px color-mix(in srgb, rgb(255 255 255 / 0.95) 68%, transparent);
   --neu-shadow-primary:
     2px 3px 8px color-mix(in srgb, rgb(32 59 80 / 0.20) 92%, transparent),
@@ -120,8 +120,8 @@
     0 16px 40px rgb(32 59 80 / 0.20),
     0 3px 8px rgb(32 59 80 / 0.20),
     inset 1px 1px 0 color-mix(in srgb, rgb(255 255 255 / 0.72) 45%, transparent);
-  --neu-fill-raised: linear-gradient(135deg, color-mix(in srgb, #f4f9fe 12%, #eef5fc), #eef5fc);
-  --neu-fill-inset: linear-gradient(135deg, color-mix(in srgb, #e2eef8 35%, #eef5fc), color-mix(in srgb, #f4f9fe 30%, #eef5fc));
+  --neu-fill-raised: linear-gradient(135deg, var(--neu-surface-soft), var(--neu-surface));
+  --neu-fill-inset: linear-gradient(135deg, var(--neu-surface-low), var(--neu-surface));
   --neu-fill-primary: linear-gradient(135deg, #5299c7, color-mix(in srgb, #5299c7 94%, black));
   --neu-shadow-primary-inset:
     inset 2px 2px 5px color-mix(in srgb, #5299c7 68%, black),
@@ -182,7 +182,7 @@
   --neu-surface: #1d2733;
   --neu-surface-soft: #242f3d;
   --neu-surface-low: #182129;
-  --neu-edge: color-mix(in srgb, #e4eef8 4%, transparent);
+  --neu-edge: rgb(228 238 248 / 0.12);
   --neu-accent-ink: #8ec5e8;
   --neu-shadow-dark: rgb(0 0 0 / 0.38);
   --neu-shadow-light: rgb(228 238 248 / 0.05);

@@ -416,7 +416,7 @@ function menuClassName(
   return cn(
     "flex h-9 w-full min-w-0 items-center gap-2 overflow-hidden rounded-[var(--neu-radius-control)] px-3 text-left text-sm font-medium text-[var(--foreground)] outline-none transition-[background-color,box-shadow,color] duration-[var(--neu-duration)] motion-reduce:transition-none hover:bg-[var(--neu-surface-soft)] focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:pointer-events-none disabled:opacity-50",
     isActive &&
-      "bg-[var(--neu-surface)] text-[var(--neu-accent-ink)] [box-shadow:var(--neu-shadow-inset-sm)]",
+      "relative bg-[var(--neu-selected)] text-[var(--neu-accent-ink)] font-semibold [box-shadow:var(--neu-shadow-inset-sm)] before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-[var(--neu-accent-ink)]",
     collapsed &&
       "justify-center px-2 [&>span:last-child]:sr-only",
     className,

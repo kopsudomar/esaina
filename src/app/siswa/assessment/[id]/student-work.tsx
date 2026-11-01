@@ -196,16 +196,25 @@ export function StudentWork({ assessmentId }: { assessmentId: string }) {
         </Alert>
       ) : null}
 
-      <p
-        className="text-sm text-muted-foreground"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={total}
-        aria-valuenow={filled}
-        aria-valuetext={`${filled} dari ${total} soal terisi`}
-      >
-        {filled} dari {total} soal terisi
-      </p>
+      <div className="flex flex-col gap-1.5">
+        <p className="text-sm text-muted-foreground" id="progress-label">
+          {filled} dari {total} soal terisi
+        </p>
+        <div
+          role="progressbar"
+          aria-labelledby="progress-label"
+          aria-valuemin={0}
+          aria-valuemax={total > 0 ? total : 0}
+          aria-valuenow={total > 0 ? filled : 0}
+          aria-valuetext={`${filled} dari ${total} soal terisi`}
+          className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--neu-surface-low)]"
+        >
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-[var(--neu-duration)] motion-reduce:transition-none"
+            style={{ width: `${total > 0 ? Math.round((filled / total) * 100) : 0}%` }}
+          />
+        </div>
+      </div>
 
       <nav aria-label="Navigasi soal" className="flex flex-wrap gap-2">
         {assessment.questions.map((q, i) => {

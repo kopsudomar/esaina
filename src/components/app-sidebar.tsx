@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Home, ChartColumn, Users, FileText } from "lucide-react";
+import { ClipboardList, Home, ChartColumn, Users, FileText, School, Activity } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -55,11 +55,32 @@ const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }
   ],
   ADMIN: [
     { href: "/admin", label: "Beranda", icon: Home },
-    { href: "/admin/classes", label: "Kelas", icon: Users },
+    { href: "/admin/classes", label: "Kelas", icon: School },
     { href: "/admin/assessments", label: "Asesmen", icon: FileText },
     { href: "/admin/users", label: "Pengguna", icon: Users },
-    { href: "/admin/monitoring", label: "Monitoring", icon: ChartColumn },
+    { href: "/admin/monitoring", label: "Monitoring", icon: Activity },
   ],
+};
+
+const PAGE_TITLE: Record<Role, Record<string, string>> = {
+  TEACHER: {
+    "/guru": "Beranda",
+    "/guru/classes": "Kelas",
+    "/guru/assessments": "Asesmen",
+    "/guru/grading": "Penilaian",
+  },
+  STUDENT: {
+    "/siswa": "Beranda",
+    "/siswa/classes": "Kelas",
+    "/siswa/results": "Hasil",
+  },
+  ADMIN: {
+    "/admin": "Beranda",
+    "/admin/classes": "Kelas",
+    "/admin/assessments": "Asesmen",
+    "/admin/users": "Pengguna",
+    "/admin/monitoring": "Monitoring",
+  },
 };
 
 export function AppSidebar({ role, name, children }: { role: Role; name: string; children: React.ReactNode }) {
@@ -69,6 +90,8 @@ export function AppSidebar({ role, name, children }: { role: Role; name: string;
     .map((item) => item.href)
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
     .sort((a, b) => b.length - a.length)[0];
+
+  const pageTitle = (activeHref && PAGE_TITLE[role]?.[activeHref]) || ROLE_LABEL[role];
 
   return (
     <SidebarProvider className="min-h-screen">
@@ -116,8 +139,18 @@ export function AppSidebar({ role, name, children }: { role: Role; name: string;
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center gap-2 border-b border-border px-4 md:hidden">
-          <SidebarTrigger label="Buka menu" />
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-[color:var(--border)] bg-[var(--background)]/85 px-4 backdrop-blur">
+          <div className="md:hidden">
+            <SidebarTrigger label="Buka menu" />
+          </div>
+          <div className="flex min-w-0 flex-col justify-center">
+            <p className="truncate text-sm font-medium leading-tight text-[var(--foreground)]">{pageTitle}</p>
+            <p className="truncate text-xs leading-tight text-muted-foreground">{ROLE_LABEL[role]} · ESAINA</p>
+          </div>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="hidden max-w-48 truncate text-xs text-muted-foreground sm:block">{name}</span>
+            <Badge variant="soft">{ROLE_LABEL[role]}</Badge>
+          </div>
         </header>
         {children}
       </SidebarInset>

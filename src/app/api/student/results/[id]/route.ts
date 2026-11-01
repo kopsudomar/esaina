@@ -19,13 +19,27 @@ export const GET = route<[Ctx]>(async (_req, ctx) => {
           totalScore: true,
           items: {
             orderBy: { questionId: "asc" },
-            select: { questionId: true, criterionId: true, score: true, feedback: true },
+            select: {
+              questionId: true,
+              criterionId: true,
+              score: true,
+              feedback: true,
+              criterion: { select: { code: true, description: true } },
+            },
           },
           submission: {
             select: {
               assessment: {
                 select: {
-                  questions: { orderBy: { order: "asc" }, select: { id: true, order: true, text: true } },
+                  questions: {
+                    orderBy: { order: "asc" },
+                    select: {
+                      id: true,
+                      order: true,
+                      text: true,
+                      criteria: { select: { id: true, code: true, maxScore: true } },
+                    },
+                  },
                 },
               },
             },

@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 
 type Result = {
@@ -19,10 +21,21 @@ type Result = {
   publishedAt: string;
   revision: {
     totalScore: number;
-    items: { questionId: string; criterionId: string; score: number | null; feedback: string }[];
+    items: {
+      questionId: string;
+      criterionId: string;
+      score: number | null;
+      feedback: string;
+      criterion: { code: string; description: string };
+    }[];
     submission: {
       assessment: {
-        questions: { id: string; order: number; text: string }[];
+        questions: {
+          id: string;
+          order: number;
+          text: string;
+          criteria: { id: string; code: string; maxScore: number }[];
+        }[];
       };
     };
   };
@@ -63,6 +76,9 @@ export function ResultDetail({ id }: { id: string }) {
   }
 
   const { assessment, publishedAt, revision } = query.data;
+  const maxTotal = revision.submission.assessment.questions
+    .flatMap((q) => q.criteria)
+    .reduce((sum, c) => sum + c.maxScore, 0);
   const gradedQuestions = revision.submission.assessment.questions
     .map((question) => ({
       question,
@@ -87,9 +103,14 @@ export function ResultDetail({ id }: { id: string }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-3xl font-semibold tabular-nums text-primary">
-            {revision.totalScore}
-          </p>
+          <div className="flex items-baseline gap-1">
+            <p className="text-4xl font-semibold tabular-nums text-primary">
+              {revision.totalScore}
+            </p>
+            {maxTotal > 0 && (
+              <p className="text-lg tabular-nums text-muted-foreground">/ {maxTotal}</p>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">Total nilai</p>
         </CardContent>
       </Card>
@@ -101,31 +122,47 @@ export function ResultDetail({ id }: { id: string }) {
           description="Rincian per soal akan tampil di sini setelah tersedia."
         />
       ) : (
-        gradedQuestions.map(({ question, items }) => (
-          <Card key={question.id}>
-            <CardHeader>
-              <CardTitle>Soal {question.order}</CardTitle>
-              <CardDescription>{question.text}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <ul className="flex flex-col gap-2">
-                {items.map((item) => (
-                  <li
-                    key={item.criterionId}
-                    className="flex flex-col gap-1 rounded-[var(--neu-radius-small)] bg-[var(--neu-surface-soft)] px-3 py-2"
-                  >
-                    <p className="text-sm font-semibold tabular-nums">
-                      {item.score === null ? "Belum dinilai" : `${item.score} poin`}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {item.feedback ? item.feedback : "Tidak ada catatan."}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        ))
+        gradedQuestions.map(({ question, items }) => {
+          const questionMax = question.criteria.reduce((s, c) => s + c.maxScore, 0);
+          const questionTotal = items.reduce((s, i) => s + (i.score ?? 0), 0);
+          return (
+            <Card key={question.id}>
+              <CardHeader>
+                <CardTitle>Soal {question.order}</CardTitle>
+                <CardDescription>{question.text}</CardDescription>
+                {questionMax > 0 && (
+                  <CardAction>
+                    <Badge variant="soft">
+                      {questionTotal}/{questionMax} poin
+                    </Badge>
+                  </CardAction>
+                )}
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <ul className="flex flex-col gap-2">
+                  {items.map((item) => (
+                    <li
+                      key={item.criterionId}
+                      className="flex flex-col gap-1.5 rounded-[var(--neu-radius-small)] bg-[var(--neu-surface-soft)] px-3 py-2.5"
+                    >
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                        <p className="text-sm font-medium text-[var(--foreground)]">
+                          {item.criterion.code} · {item.criterion.description}
+                        </p>
+                        <p className="text-sm font-semibold tabular-nums text-primary">
+                          {item.score === null ? "Belum dinilai" : `${item.score} poin`}
+                        </p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {item.feedback ? item.feedback : "Tidak ada catatan."}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          );
+        })
       )}
     </div>
   );
