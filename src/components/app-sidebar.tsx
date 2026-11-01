@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap, ClipboardList, Home, ChartColumn, Users, FileText } from "lucide-react";
+import { ClipboardList, Home, ChartColumn, Users, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -78,7 +79,7 @@ export function AppSidebar({ role, name, children }: { role: Role; name: string;
       >
         <SidebarHeader className="border-b-0 px-5">
           <Link href={ROLE_HOME[role]} className="flex items-center gap-2">
-            <GraduationCap className="size-6 text-primary" aria-hidden />
+            <Image src="/logo-mark.png" alt="" aria-hidden width={24} height={24} className="size-6" />
             <span className="font-heading text-lg font-bold tracking-tight text-primary">ESAINA</span>
           </Link>
         </SidebarHeader>

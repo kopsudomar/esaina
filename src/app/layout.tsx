@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "ESAINA — Explainable Essay Assessment",
   description:
     "Platform penilaian esai: AI menyiapkan draf skor, guru memutuskan, siswa melihat hasil terbit.",
+  icons: { icon: "/logo-mark.png", shortcut: "/logo-mark.png", apple: "/logo-mark.png" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

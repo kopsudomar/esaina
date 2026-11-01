@@ -1,6 +1,7 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { GraduationCap, ShieldCheck, ScrollText } from "lucide-react";
+import { ShieldCheck, ScrollText } from "lucide-react";
 import { authOptions } from "@/lib/auth/config";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoginForm } from "./login-form";
@@ -28,7 +29,7 @@ export default async function LoginPage() {
     <div className="grid min-h-screen lg:grid-cols-2">
       <section className="hidden flex-col justify-center gap-8 px-12 lg:flex">
         <div className="flex items-center gap-2">
-          <GraduationCap className="size-6 text-primary" aria-hidden />
+          <Image src="/logo-mark.png" alt="" aria-hidden width={24} height={24} className="size-6 object-contain" />
           <span className="font-heading text-lg font-bold tracking-tight text-primary">
             ESAINA
           </span>
@@ -53,7 +54,7 @@ export default async function LoginPage() {
         <div className="w-full max-w-md">
           <Card>
             <CardHeader>
-              <GraduationCap className="size-6 text-primary lg:hidden" aria-hidden />
+              <Image src="/logo-mark.png" alt="" aria-hidden width={24} height={24} className="size-6 object-contain lg:hidden" />
               <CardTitle className="text-2xl">Masuk ke ESAINA</CardTitle>
               <CardDescription>Gunakan akun yang diberikan sekolah.</CardDescription>
             </CardHeader>

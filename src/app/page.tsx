@@ -1,10 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import {
   ArrowRight,
   Check,
   ClipboardCheck,
-  GraduationCap,
   PenLine,
   ShieldCheck,
   Sparkles,
@@ -71,7 +71,7 @@ export default async function Home() {
       <header className="flex items-center justify-between py-5">
         <Link href="/" className="flex items-center gap-3">
           <span className="flex size-9 items-center justify-center rounded-[var(--neu-radius-control)] bg-[var(--neu-surface-soft)] shadow-[var(--neu-shadow-raised-sm)]">
-            <GraduationCap className="size-5 text-primary" aria-hidden />
+            <Image src="/logo-mark.png" alt="" aria-hidden width={20} height={20} className="size-5 object-contain" />
           </span>
           <span className="flex flex-col">
             <span className="font-heading text-lg font-bold leading-tight tracking-tight text-primary">ESAINA</span>
