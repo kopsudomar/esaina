@@ -99,6 +99,7 @@ model Assessment {
   title       String
   instruction String
   status      AssessmentStatus @default(DRAFT)
+  durationMinutes Int             @default(60) // 0 = tanpa batas waktu
   version     Int              @default(1)
   openedAt    DateTime?
   closedAt    DateTime?

@@ -13,6 +13,7 @@ async function getDraft(id: string, studentId: string) {
     where: { id, status: "OPEN", class: { memberships: { some: { studentId } } } },
     select: {
       id: true, title: true, instruction: true,
+      durationMinutes: true, openedAt: true, closedAt: true,
       questions: {
         orderBy: { order: "asc" },
         select: { id: true, order: true, text: true, maxScore: true },

@@ -7,17 +7,16 @@ import { teacherSubmission } from "@/lib/grading";
 
 type Ctx = { params: Promise<{ id: string }> };
 type Item = { questionId: string; criterionId: string; score: number; feedback: string };
+type ExistingItem = { questionId: string; criterionId: string; score: number | null; feedback?: string; source: "MANUAL" | "AI" };
 const schema = z.object({ aiResultId: z.string(), version: z.number().int().positive() });
 
-export function mergeAiItems(
-  existing: { questionId: string; criterionId: string; score: number | null; source: "MANUAL" | "AI" }[],
-  aiItems: Item[],
-) {
+export function mergeAiItems(existing: ExistingItem[], aiItems: Item[]) {
   const manual = existing.filter((i) => i.source === "MANUAL");
   const manualKeys = new Set(manual.map((i) => `${i.questionId}:${i.criterionId}`));
   const items = aiItems.filter((i) => !manualKeys.has(`${i.questionId}:${i.criterionId}`));
-  const manualTotal = manual.reduce((sum, i) => sum + (i.score ?? 0), 0);
-  return { items, totalScore: manualTotal + items.reduce((sum, i) => sum + i.score, 0) };
+  // total hanya dari item berskor; nilai kosong bukan nol.
+  const totalScore = [...manual, ...items].reduce((sum, i) => (i.score === null ? sum : sum + i.score), 0);
+  return { items, manual, totalScore };
 }
 
 export const POST = route(async (req, ctx: Ctx) => {
@@ -33,10 +32,24 @@ export const POST = route(async (req, ctx: Ctx) => {
   const payload = ai.payload as { items?: Item[] };
   if (!payload.items?.length) throw validationError({ ai: "Payload AI kosong." });
   const result = await prisma.$transaction(async (tx) => {
-    const current = await tx.gradeRevision.findFirst({ where: { submissionId: id, status: "DRAFT" }, orderBy: { version: "desc" }, select: { id: true, items: { select: { questionId: true, criterionId: true, score: true, source: true } } } });
-    const { items: aiItems, totalScore } = mergeAiItems(current?.items ?? [], payload.items!);
-    const data = { totalScore, items: { deleteMany: { source: "AI" as const }, create: aiItems.map((i) => ({ questionId: i.questionId, criterionId: i.criterionId, score: i.score, feedback: i.feedback, source: "AI" as const, aiResultId: parsed.data.aiResultId })) } };
-    return current ? tx.gradeRevision.update({ where: { id: current.id }, data: { ...data, version: { increment: 1 } }, select: { id: true, version: true, status: true, totalScore: true } }) : tx.gradeRevision.create({ data: { ...data, submissionId: id, authorId: teacher.id }, select: { id: true, version: true, status: true, totalScore: true } });
+    // ambil revisi TERBARU apa pun statusnya agar nilai guru tidak hilang
+    const latest = await tx.gradeRevision.findFirst({ where: { submissionId: id }, orderBy: { version: "desc" }, select: { id: true, version: true, status: true, items: { select: { questionId: true, criterionId: true, score: true, feedback: true, source: true } } } });
+    const { items: aiItems, manual, totalScore } = mergeAiItems(latest?.items ?? [], payload.items!);
+    const aiCreate = aiItems.map((i) => ({ questionId: i.questionId, criterionId: i.criterionId, score: i.score, feedback: i.feedback, source: "AI" as const, aiResultId: parsed.data.aiResultId }));
+    if (latest?.status === "DRAFT") {
+      return tx.gradeRevision.update({ where: { id: latest.id }, data: { totalScore, version: { increment: 1 }, items: { deleteMany: { source: "AI" as const }, create: aiCreate } }, select: { id: true, version: true, status: true, totalScore: true } });
+    }
+    // revisi terbaru FINAL (atau belum ada): buat DRAFT baru, warisi item manual
+    return tx.gradeRevision.create({
+      data: {
+        submissionId: id,
+        authorId: teacher.id,
+        version: (latest?.version ?? 0) + 1,
+        totalScore,
+        items: { create: [...manual.map((i) => ({ questionId: i.questionId, criterionId: i.criterionId, score: i.score, feedback: i.feedback ?? "", source: "MANUAL" as const })), ...aiCreate] },
+      },
+      select: { id: true, version: true, status: true, totalScore: true },
+    });
   });
   return ok({ revision: result });
 });

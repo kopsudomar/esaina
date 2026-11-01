@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTeacher, route } from "@/lib/auth/guard";
 import { conflict, notFound } from "@/lib/api-error";
 import { ok } from "@/lib/http";
-import { teacherSubmission } from "@/lib/grading";
+import { sumScores, teacherSubmission } from "@/lib/grading";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -18,7 +18,7 @@ export const POST = route(async (_req, ctx: Ctx) => {
   if (!draft || draft.items.length !== expected.length || draft.items.some((i) => i.score === null) || expected.some((id) => !draft.items.some((i) => i.criterionId === id))) throw conflict("Semua kriteria harus diberi skor sebelum disahkan.");
 
   const finalized = await prisma.$transaction(async (tx) => {
-    const revision = await tx.gradeRevision.update({ where: { id: draft.id, status: "DRAFT" }, data: { status: "FINAL", approvedById: teacher.id, approvedAt: new Date() }, select: { id: true, status: true, totalScore: true, version: true } });
+    const revision = await tx.gradeRevision.update({ where: { id: draft.id, status: "DRAFT" }, data: { status: "FINAL", totalScore: sumScores(draft.items), approvedById: teacher.id, approvedAt: new Date() }, select: { id: true, status: true, totalScore: true, version: true } });
     await tx.auditEvent.create({ data: { actorId: teacher.id, action: "APPROVE", entityType: "GradeRevision", entityId: revision.id, versionBefore: draft.version, versionAfter: revision.version } });
     return revision;
   });

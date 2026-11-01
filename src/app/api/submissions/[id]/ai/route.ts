@@ -11,6 +11,13 @@ type Ctx = { params: Promise<{ id: string }> };
 // Lock hanya per-instance proses; naikkan ke advisory lock DB bila multi-instance.
 const inFlight = new Set<string>();
 
+// Pesan mentah model bisa memuat cuplikan JSON/jawaban; jangan bocorkan ke response.
+const aiErrorDetail = (m: string) => {
+  if (!m) return "Saran AI gagal divalidasi.";
+  if (m.includes("{") || m.includes('"items"')) return "Format keluaran model tidak valid.";
+  return m.slice(0, 200);
+};
+
 export const POST = route(async (_req, ctx: Ctx) => {
   const teacher = await requireTeacher();
   const { id } = await ctx.params;
@@ -49,7 +56,7 @@ export const POST = route(async (_req, ctx: Ctx) => {
       }
     }
     await prisma.aIResult.create({ data: { submissionId: id, requestedById: teacher.id, provider, model, promptVersion: PROMPT_VERSION, cacheKey: key, sourceVersion: data.version, payload: { error: lastError } as never, validationOk: false, validationMsg: lastError } });
-    throw validationError({ ai: "Saran AI gagal divalidasi. Jalur penilaian manual tetap tersedia." });
+    throw validationError({ ai: aiErrorDetail(lastError), hint: "Jalur penilaian manual tetap tersedia." });
   } finally {
     inFlight.delete(id);
   }

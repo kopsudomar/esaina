@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap, ClipboardList, Home, ChartColumn, Users } from "lucide-react";
+import { GraduationCap, ClipboardList, Home, ChartColumn, Users, FileText } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -43,14 +43,19 @@ const ROLE_HOME: Record<Role, string> = {
 const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }[]> = {
   TEACHER: [
     { href: "/guru", label: "Beranda", icon: Home },
+    { href: "/guru/classes", label: "Kelas", icon: Users },
+    { href: "/guru/assessments", label: "Asesmen", icon: FileText },
     { href: "/guru/grading", label: "Penilaian", icon: ClipboardList },
   ],
   STUDENT: [
     { href: "/siswa", label: "Beranda", icon: Home },
+    { href: "/siswa/classes", label: "Kelas", icon: Users },
     { href: "/siswa/results", label: "Hasil", icon: ChartColumn },
   ],
   ADMIN: [
     { href: "/admin", label: "Beranda", icon: Home },
+    { href: "/admin/classes", label: "Kelas", icon: Users },
+    { href: "/admin/assessments", label: "Asesmen", icon: FileText },
     { href: "/admin/users", label: "Pengguna", icon: Users },
     { href: "/admin/monitoring", label: "Monitoring", icon: ChartColumn },
   ],
@@ -58,6 +63,11 @@ const NAV: Record<Role, { href: string; label: string; icon: React.ElementType }
 
 export function AppSidebar({ role, name, children }: { role: Role; name: string; children: React.ReactNode }) {
   const pathname = usePathname();
+
+  const activeHref = NAV[role]
+    .map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
 
   return (
     <SidebarProvider className="min-h-screen">
@@ -78,7 +88,7 @@ export function AppSidebar({ role, name, children }: { role: Role; name: string;
               <nav aria-label={`Navigasi ${ROLE_LABEL[role]}`}>
                 <SidebarMenu>
                   {NAV[role].map((item) => {
-                    const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    const active = item.href === activeHref;
                     return (
                       <SidebarMenuItem key={item.href}>
                         <SidebarMenuLink href={item.href} isActive={active}>
