@@ -9,7 +9,7 @@ export const GET = route<[Ctx]>(async (_req, ctx) => {
   const student = await requireStudent();
   const { id } = await ctx.params;
   const publication = await prisma.publication.findFirst({
-    where: { id, revision: { submission: { studentId: student.id } } },
+    where: { id, revision: { status: "FINAL", submission: { studentId: student.id } } },
     select: {
       id: true,
       publishedAt: true,

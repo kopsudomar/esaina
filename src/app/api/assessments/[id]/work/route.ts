@@ -5,8 +5,8 @@ import { conflict, forbidden, notFound, validationError } from "@/lib/api-error"
 import { ok, readJson } from "@/lib/http";
 
 type Ctx = { params: Promise<{ id: string }> };
-const answerSchema = z.object({ content: z.string().max(20_000) });
-const saveSchema = z.object({ version: z.number().int().positive(), answers: z.record(z.string(), z.string().max(20_000)) });
+const answerSchema = z.object({ content: z.string().max(5_000) });
+const saveSchema = z.object({ version: z.number().int().positive(), answers: z.record(z.string(), z.string().max(5_000)) });
 
 async function getDraft(id: string, studentId: string) {
   const assessment = await prisma.assessment.findFirst({

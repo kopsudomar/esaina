@@ -213,6 +213,17 @@ const TEKS_QC =
 
 const TEKS_A_AWAL = "Penggunaan telepon genggam di sekolah sebaiknya dibatasi, bukan dilarang sepenuhnya.";
 
+// Jawaban hampir menyentuh batas 5.000 karakter untuk menguji penghitung karakter.
+const TEKS_PANJANG = (() => {
+  const kalimat =
+    "Pembatasan telepon genggam di sekolah perlu dijalankan dengan aturan yang jelas, konsisten, dan disosialisasikan kepada siswa serta orang tua agar tidak menimbulkan kebingungan.";
+  let text = "";
+  while (text.length + kalimat.length + 2 <= 4800) text += (text ? "\n\n" : "") + kalimat;
+  return text;
+})();
+
+const TEKS_SINGKAT_Q2 = "Etika media sosial penting agar remaja tidak menyakiti orang lain.";
+
 type SubmissionSpec = {
   studentKey: string;
   status: "IN_PROGRESS" | "SUBMITTED";
@@ -225,12 +236,21 @@ const UTS_SUBMISSIONS: SubmissionSpec[] = [
   { studentKey: "s001", status: "SUBMITTED", version: 1, daysAgo: 2, answers: { 1: TEKS_A, 2: TEKS_QA } },
   { studentKey: "s002", status: "SUBMITTED", version: 1, daysAgo: 1, answers: { 1: TEKS_B, 2: TEKS_QB } },
   { studentKey: "s003", status: "SUBMITTED", version: 1, daysAgo: null, answers: { 1: TEKS_C, 2: TEKS_QC } },
-  { studentKey: "s004", status: "IN_PROGRESS", version: 3, daysAgo: null, answers: { 1: TEKS_A_AWAL, 2: "" } },
+  { studentKey: "s004", status: "SUBMITTED", version: 1, daysAgo: 1, answers: { 1: TEKS_A, 2: TEKS_QA } },
+  { studentKey: "s005", status: "SUBMITTED", version: 1, daysAgo: 1, answers: { 1: "", 2: "" } },
+  { studentKey: "s006", status: "SUBMITTED", version: 1, daysAgo: 1, answers: { 1: TEKS_PANJANG, 2: TEKS_SINGKAT_Q2 } },
+  { studentKey: "s007", status: "IN_PROGRESS", version: 2, daysAgo: null, answers: { 1: TEKS_A_AWAL } },
+  { studentKey: "s008", status: "IN_PROGRESS", version: 1, daysAgo: null, answers: {} },
 ];
 
 const XIB_SUBMISSIONS: SubmissionSpec[] = [
-  { studentKey: "s006", status: "SUBMITTED", version: 1, daysAgo: 2, answers: { 1: TEKS_QB } },
+  { studentKey: "s011", status: "SUBMITTED", version: 1, daysAgo: 3, answers: { 1: TEKS_QB } },
+  { studentKey: "s012", status: "SUBMITTED", version: 1, daysAgo: 2, answers: { 1: TEKS_QC } },
+  { studentKey: "s013", status: "IN_PROGRESS", version: 1, daysAgo: null, answers: { 1: TEKS_A_AWAL } },
 ];
+
+const XIIA_STUDENT_KEYS = ["s001", "s002", "s003", "s004", "s005", "s006", "s007", "s008", "s009", "s010"];
+const XIB_STUDENT_KEYS = ["s011", "s012", "s013"];
 
 // Jawaban s003 disubmit 6 jam lalu; ditandai lewat hari pecahan.
 const S003_SUBMITTED_AT = hoursAgo(6);
@@ -292,9 +312,329 @@ const S002_AI_ITEMS: AiItemSpec[] = [
 
 const S002_ANSWERS: Record<number, string> = { 1: TEKS_B, 2: TEKS_QB };
 
-// ---------------------------------------------------------------------------
-// Self-check data demo — gagal cepat sebelum menyentuh DB
-// ---------------------------------------------------------------------------
+// s003: AI menghasilkan evidence yang tidak ada di jawaban -> validationOk=false (jalur manual).
+const S003_ANSWERS: Record<number, string> = { 1: TEKS_C, 2: TEKS_QC };
+
+const S003_AI_ITEMS: AiItemSpec[] = [
+  {
+    order: 1,
+    code: "K1",
+    score: 2,
+    evidence: "Gawai di sekolah menurut saya boleh saja dipakai.",
+    rationale: "Posisi ada, tetapi bertentangan dengan paragraf yang mengakui gawai mengganggu.",
+    feedback: "Tetapkan satu posisi dan dukung konsisten.",
+  },
+  {
+    order: 1,
+    code: "K2",
+    score: 1,
+    evidence: "Teknologi sekarang sudah canggih, jadi siswa perlu belajar menggunakannya.",
+    rationale: "Tidak ada bukti atau contoh konkret.",
+    feedback: "Tambahkan data atau pengalaman spesifik.",
+  },
+  {
+    order: 1,
+    code: "K3",
+    score: 3,
+    evidence: "Jadi, saya rasa tidak perlu ada aturan yang terlalu ketat.",
+    rationale: "Struktur terbaca, simpulan kurang tegas.",
+    feedback: "Perjelas simpulan dengan alasan utama.",
+  },
+  {
+    order: 2,
+    code: "E1",
+    score: 2,
+    evidence: "Etika itu penting supaya tidak ada masalah.",
+    rationale: "Definisi etika bermedia sosial tidak dijelaskan.",
+    feedback: "Sebutkan norma privasi dan verifikasi informasi.",
+  },
+  {
+    order: 2,
+    code: "E2",
+    score: 2,
+    evidence: "Data survei nasional tahun 2025 menunjukkan 78 persen remaja pernah menjadi korban perundungan daring.",
+    rationale: "Model mengarang data yang tidak ada pada jawaban.",
+    feedback: "Gunakan contoh yang benar-benar ditulis siswa.",
+  },
+];
+
+// s004: AI lolos validasi, lalu diterapkan menjadi revisi DRAFT (belum disahkan).
+const S004_ANSWERS: Record<number, string> = { 1: TEKS_A, 2: TEKS_QA };
+
+const S004_AI_ITEMS: AiItemSpec[] = [
+  {
+    order: 1,
+    code: "K1",
+    score: 4,
+    evidence: "Penggunaan telepon genggam di sekolah sebaiknya dibatasi, bukan dilarang sepenuhnya.",
+    rationale: "Tesis tegas dan posisi jelas sejak pembuka.",
+    feedback: "Pertahankan kejelasan tesis.",
+  },
+  {
+    order: 1,
+    code: "K2",
+    score: 4,
+    evidence: "Berdasarkan pengamatan di beberapa kelas, siswa yang membuka media sosial saat guru menjelaskan lebih sulit menangkap materi dan tertinggal pada bagian akhir pelajaran.",
+    rationale: "Setiap argumen disertai bukti yang relevan.",
+    feedback: "Tambahkan sumber data bila tersedia.",
+  },
+  {
+    order: 1,
+    code: "K3",
+    score: 4,
+    evidence: "Dengan demikian, pembatasan gawai adalah jalan tengah.",
+    rationale: "Struktur runtut dari pembuka hingga simpulan.",
+    feedback: "Alur sudah baik.",
+  },
+  {
+    order: 2,
+    code: "E1",
+    score: 4,
+    evidence: "Etika bermedia sosial adalah seperangkat norma dalam berinteraksi di platform digital, seperti menghormati privasi, memeriksa kebenaran informasi sebelum membagikannya, dan menghindari ujaran kebencian.",
+    rationale: "Definisi lengkap dan menyebut norma spesifik.",
+    feedback: "Definisi sudah tepat.",
+  },
+  {
+    order: 2,
+    code: "E2",
+    score: 3,
+    evidence: "Contohnya, seorang siswa yang menyebarkan foto temannya tanpa izin dapat membuat korban mengalami tekanan psikologis dan berurusan dengan pihak sekolah.",
+    rationale: "Contoh konkret, dampak dijelaskan; simpulan bisa lebih tegas.",
+    feedback: "Tegaskan simpulan pada akhir paragraf.",
+  },
+];
+
+const S011_GRADE_ITEMS: GradeItemSpec[] = [
+  { order: 1, code: "X1", score: 3, feedback: "Isi sesuai topik, definisi etika masih umum." },
+  { order: 1, code: "X2", score: 3, feedback: "Struktur terbaca; beberapa kalimat perlu diperbaiki." },
+];
+
+type AiResultSpec = {
+  id: string;
+  studentKey: string;
+  assessmentKey: "uts" | "xib";
+  answers: Record<number, string>;
+  items: AiItemSpec[];
+  validationOk: boolean;
+  validationMsg: string | null;
+  tokenUsed: number;
+  hoursAgo: number;
+};
+
+const AI_RESULTS: AiResultSpec[] = [
+  {
+    id: "seed-ai-s002",
+    assessmentKey: "uts",
+    studentKey: "s002",
+    answers: S002_ANSWERS,
+    items: S002_AI_ITEMS,
+    validationOk: true,
+    validationMsg: null,
+    tokenUsed: 912,
+    hoursAgo: 3,
+  },
+  {
+    id: "seed-ai-s003",
+    assessmentKey: "uts",
+    studentKey: "s003",
+    answers: S003_ANSWERS,
+    items: S003_AI_ITEMS,
+    validationOk: false,
+    validationMsg: "Field evidence bukan kutipan persis dari jawaban untuk E2.",
+    tokenUsed: 1043,
+    hoursAgo: 6,
+  },
+  {
+    id: "seed-ai-s004",
+    assessmentKey: "uts",
+    studentKey: "s004",
+    answers: S004_ANSWERS,
+    items: S004_AI_ITEMS,
+    validationOk: true,
+    validationMsg: null,
+    tokenUsed: 887,
+    hoursAgo: 2,
+  },
+];
+
+type RevisionSpec = {
+  id: string;
+  studentKey: string;
+  assessmentKey: "uts" | "xib";
+  authorKey: "guru" | "guru2";
+  approvedByKey: "guru" | "guru2" | null;
+  status: "DRAFT" | "FINAL";
+  version: number;
+  source: "MANUAL" | "AI";
+  aiResultId: string | null;
+  totalScore: number;
+  items: GradeItemSpec[];
+  approvedHoursAgo: number | null;
+};
+
+const totalOf = (items: GradeItemSpec[]) => items.reduce((sum, i) => sum + i.score, 0);
+
+const REVISIONS: RevisionSpec[] = [
+  {
+    id: "seed-grade-s001",
+    studentKey: "s001",
+    assessmentKey: "uts",
+    authorKey: "guru",
+    approvedByKey: "guru",
+    status: "FINAL",
+    version: 1,
+    source: "MANUAL",
+    aiResultId: null,
+    totalScore: 18,
+    items: S001_GRADE_ITEMS,
+    approvedHoursAgo: 24,
+  },
+  {
+    id: "seed-grade-s004-draft",
+    studentKey: "s004",
+    assessmentKey: "uts",
+    authorKey: "guru",
+    approvedByKey: null,
+    status: "DRAFT",
+    version: 1,
+    source: "AI",
+    aiResultId: "seed-ai-s004",
+    totalScore: 19,
+    items: S004_AI_ITEMS.map(({ order, code, score, feedback }) => ({ order, code, score, feedback })),
+    approvedHoursAgo: null,
+  },
+  {
+    id: "seed-grade-s011",
+    studentKey: "s011",
+    assessmentKey: "xib",
+    authorKey: "guru2",
+    approvedByKey: "guru2",
+    status: "FINAL",
+    version: 1,
+    source: "MANUAL",
+    aiResultId: null,
+    totalScore: 6,
+    items: S011_GRADE_ITEMS,
+    approvedHoursAgo: 12,
+  },
+];
+
+type PublicationSpec = {
+  id: string;
+  revisionId: string;
+  assessmentKey: "uts" | "xib";
+  publishedByKey: "guru" | "guru2";
+  hoursAgo: number;
+};
+
+const PUBLICATIONS: PublicationSpec[] = [
+  { id: "seed-pub-s001", revisionId: "seed-grade-s001", assessmentKey: "uts", publishedByKey: "guru", hoursAgo: 20 },
+  { id: "seed-pub-s011", revisionId: "seed-grade-s011", assessmentKey: "xib", publishedByKey: "guru2", hoursAgo: 10 },
+];
+
+type AuditEventSpec = {
+  id: string;
+  actorKey: string;
+  action: "SUBMIT" | "APPLY_AI" | "CHANGE_GRADE" | "APPROVE" | "PUBLISH" | "DELETE";
+  entityType: string;
+  entityId: string;
+  versionBefore: number | null;
+  versionAfter: number | null;
+  hoursAgo: number;
+};
+
+const AUDIT_EVENTS: AuditEventSpec[] = [
+  {
+    id: "seed-audit-1",
+    actorKey: "s001",
+    action: "SUBMIT",
+    entityType: "Submission",
+    entityId: "sub:s001",
+    versionBefore: null,
+    versionAfter: 1,
+    hoursAgo: 48,
+  },
+  {
+    id: "seed-audit-2",
+    actorKey: "guru",
+    action: "APPROVE",
+    entityType: "GradeRevision",
+    entityId: "seed-grade-s001",
+    versionBefore: 1,
+    versionAfter: 1,
+    hoursAgo: 24,
+  },
+  {
+    id: "seed-audit-3",
+    actorKey: "guru",
+    action: "PUBLISH",
+    entityType: "Publication",
+    entityId: "pub:seed-pub-s001",
+    versionBefore: null,
+    versionAfter: null,
+    hoursAgo: 20,
+  },
+  {
+    id: "seed-audit-4",
+    actorKey: "guru",
+    action: "APPLY_AI",
+    entityType: "GradeRevision",
+    entityId: "seed-grade-s004-draft",
+    versionBefore: null,
+    versionAfter: 1,
+    hoursAgo: 2,
+  },
+  {
+    id: "seed-audit-5",
+    actorKey: "guru",
+    action: "CHANGE_GRADE",
+    entityType: "GradeRevision",
+    entityId: "seed-grade-s001",
+    versionBefore: 1,
+    versionAfter: 2,
+    hoursAgo: 26,
+  },
+  {
+    id: "seed-audit-6",
+    actorKey: "s011",
+    action: "SUBMIT",
+    entityType: "Submission",
+    entityId: "sub:s011",
+    versionBefore: null,
+    versionAfter: 1,
+    hoursAgo: 72,
+  },
+  {
+    id: "seed-audit-7",
+    actorKey: "guru2",
+    action: "APPROVE",
+    entityType: "GradeRevision",
+    entityId: "seed-grade-s011",
+    versionBefore: null,
+    versionAfter: 1,
+    hoursAgo: 12,
+  },
+  {
+    id: "seed-audit-8",
+    actorKey: "guru2",
+    action: "PUBLISH",
+    entityType: "Publication",
+    entityId: "pub:seed-pub-s011",
+    versionBefore: null,
+    versionAfter: null,
+    hoursAgo: 10,
+  },
+  {
+    id: "seed-audit-9",
+    actorKey: "guru",
+    action: "DELETE",
+    entityType: "Submission",
+    entityId: "seed-sub-legacy-s999",
+    versionBefore: 1,
+    versionAfter: null,
+    hoursAgo: 96,
+  },
+];
 
 const normalize = (s: string) => s.trim().replace(/\s+/g, " ");
 
@@ -305,60 +645,99 @@ function findCriterion(questions: QuestionSpec[], order: number, code: string): 
   return criterion;
 }
 
+const ASSESSMENT_QUESTIONS: Record<"uts" | "xib", QuestionSpec[]> = {
+  uts: UTS_QUESTIONS,
+  xib: XIB_QUESTIONS,
+};
+
 function verifySeedData() {
-  const allAnswers: string[] = [
-    ...UTS_SUBMISSIONS.flatMap((s) => Object.values(s.answers)),
-    ...XIB_SUBMISSIONS.flatMap((s) => Object.values(s.answers)),
+  const submissions = [
+    ...UTS_SUBMISSIONS.map((s) => ({ ...s, assessmentKey: "uts" as const })),
+    ...XIB_SUBMISSIONS.map((s) => ({ ...s, assessmentKey: "xib" as const })),
   ];
 
-  for (const answer of allAnswers) {
-    assert.ok(
-      answer.length <= MAX_ANSWER,
-      `Self-check: ada jawaban ${answer.length} karakter, melebihi batas ${MAX_ANSWER}.`,
-    );
+  for (const sub of submissions) {
+    for (const answer of Object.values(sub.answers)) {
+      assert.ok(
+        answer.length <= MAX_ANSWER,
+        `Self-check: jawaban ${sub.studentKey} ${answer.length} karakter, melebihi batas ${MAX_ANSWER}.`,
+      );
+    }
+  }
+  assert.equal(TEKS_PANJANG.length > 4000 && TEKS_PANJANG.length <= MAX_ANSWER, true, "Self-check: jawaban panjang harus 4.000–5.000 karakter.");
+
+  // tiap AIResult: satu item per (soal, kriteria), skor integer dalam rentang, evidence kutipan persis.
+  for (const ai of AI_RESULTS) {
+    const questions = ASSESSMENT_QUESTIONS[ai.assessmentKey];
+    const expectedPairs = questions.flatMap((q) => q.criteria.map((c) => `${q.order}:${c.code}`));
+    const seen = new Set<string>();
+    let violations = 0;
+    for (const item of ai.items) {
+      const key = `${item.order}:${item.code}`;
+      assert.ok(expectedPairs.includes(key), `Self-check: ${ai.id} memuat kriteria asing ${key}.`);
+      assert.ok(!seen.has(key), `Self-check: ${ai.id} memuat kriteria duplikat ${key}.`);
+      seen.add(key);
+      const criterion = findCriterion(questions, item.order, item.code);
+      assert.ok(
+        Number.isInteger(item.score) && item.score >= criterion.minScore && item.score <= criterion.maxScore,
+        `Self-check: skor AI ${item.score} di luar ${criterion.minScore}–${criterion.maxScore} untuk ${key}.`,
+      );
+      const answer = ai.answers[item.order];
+      assert.ok(answer !== undefined, `Self-check: ${ai.id} tidak punya jawaban soal ${item.order}.`);
+      const isQuote = normalize(answer).includes(normalize(item.evidence));
+      if (ai.validationOk) assert.ok(isQuote, `Self-check: evidence ${ai.id} bukan kutipan persis jawaban untuk ${key}.`);
+      else if (!isQuote) violations += 1;
+    }
+    assert.equal(seen.size, expectedPairs.length, `Self-check: payload ${ai.id} tidak lengkap (${seen.size}/${expectedPairs.length}).`);
+    if (ai.validationOk) {
+      assert.equal(ai.validationMsg, null, `Self-check: ${ai.id} valid tetapi validationMsg terisi.`);
+    } else {
+      assert.ok(ai.validationMsg, `Self-check: ${ai.id} gagal validasi tanpa pesan.`);
+      assert.ok(violations > 0, `Self-check: ${ai.id} ditandai gagal validasi tetapi semua evidence valid.`);
+    }
   }
 
-  for (const item of S002_AI_ITEMS) {
-    const answer = S002_ANSWERS[item.order];
-    assert.ok(answer !== undefined, `Self-check: jawaban s002 untuk soal ${item.order} tidak ada.`);
-    assert.ok(
-      normalize(answer).includes(normalize(item.evidence)),
-      `Self-check: evidence bukan kutipan persis jawaban untuk soal ${item.order}/${item.code}.`,
-    );
-    const criterion = findCriterion(UTS_QUESTIONS, item.order, item.code);
-    assert.ok(
-      Number.isInteger(item.score) && item.score >= criterion.minScore && item.score <= criterion.maxScore,
-      `Self-check: skor AI ${item.score} di luar ${criterion.minScore}–${criterion.maxScore} untuk ${item.order}/${item.code}.`,
-    );
+  // setiap revisi: totalScore == jumlah item non-null, dan tiap item dalam rentang kriteria.
+  for (const rev of REVISIONS) {
+    const questions = ASSESSMENT_QUESTIONS[rev.assessmentKey];
+    const seen = new Set<string>();
+    for (const item of rev.items) {
+      const key = `${item.order}:${item.code}`;
+      assert.ok(!seen.has(key), `Self-check: ${rev.id} memuat item duplikat ${key}.`);
+      seen.add(key);
+      const criterion = findCriterion(questions, item.order, item.code);
+      assert.ok(
+        Number.isInteger(item.score) && item.score >= criterion.minScore && item.score <= criterion.maxScore,
+        `Self-check: skor ${item.score} di luar ${criterion.minScore}–${criterion.maxScore} untuk ${rev.id} ${key}.`,
+      );
+    }
+    const total = totalOf(rev.items);
+    assert.equal(rev.totalScore, total, `Self-check: totalScore ${rev.id} ${rev.totalScore} != jumlah item ${total}.`);
+    assert.equal(rev.items.length, questions.reduce((n, q) => n + q.criteria.length, 0), `Self-check: ${rev.id} tidak menilai semua kriteria.`);
+    assert.equal(rev.status === "FINAL" ? rev.approvedByKey !== null : rev.approvedByKey === null, true, `Self-check: status/approvedBy ${rev.id} tidak konsisten.`);
+    if (rev.source === "MANUAL") assert.equal(rev.aiResultId, null, `Self-check: revisi MANUAL ${rev.id} tidak boleh menunjuk AIResult.`);
+    else assert.ok(rev.aiResultId !== null, `Self-check: revisi AI ${rev.id} harus menunjuk AIResult.`);
   }
 
-  // soal 1 punya 3 kriteria, soal 2 punya 2 kriteria
-  const q1Codes = UTS_QUESTIONS.find((q) => q.order === 1)!.criteria.map((c) => c.code);
-  const q2Codes = UTS_QUESTIONS.find((q) => q.order === 2)!.criteria.map((c) => c.code);
-  const pairs = new Set(S002_AI_ITEMS.map((i) => `${i.order}:${i.code}`));
-  assert.equal(S002_AI_ITEMS.length, 5, "Self-check: payload AI harus 5 item.");
-  assert.equal(pairs.size, 5, "Self-check: payload AI memuat pasangan soal×kriteria duplikat.");
-  assert.equal(
-    S002_AI_ITEMS.filter((i) => i.order === 1 && q1Codes.includes(i.code)).length,
-    q1Codes.length,
-    "Self-check: payload AI tidak lengkap untuk soal 1.",
-  );
-  assert.equal(
-    S002_AI_ITEMS.filter((i) => i.order === 2 && q2Codes.includes(i.code)).length,
-    q2Codes.length,
-    "Self-check: payload AI tidak lengkap untuk soal 2.",
-  );
-
-  assert.equal(S001_GRADE_ITEMS.length, 5, "Self-check: GradeItem s001 harus 5.");
-  const s001Total = S001_GRADE_ITEMS.reduce((sum, i) => sum + i.score, 0);
-  assert.equal(s001Total, 18, `Self-check: total skor s001 ${s001Total}, harus 18.`);
-  for (const item of S001_GRADE_ITEMS) {
-    const criterion = findCriterion(UTS_QUESTIONS, item.order, item.code);
-    assert.ok(
-      item.score >= criterion.minScore && item.score <= criterion.maxScore,
-      `Self-check: skor ${item.score} di luar ${criterion.minScore}–${criterion.maxScore} untuk ${item.order}/${item.code}.`,
-    );
+  // publikasi hanya untuk revisi FINAL yang sudah disahkan.
+  for (const pub of PUBLICATIONS) {
+    const rev = REVISIONS.find((r) => r.id === pub.revisionId);
+    assert.ok(rev, `Self-check: publikasi ${pub.id} menunjuk revisi tak dikenal.`);
+    assert.equal(rev.status, "FINAL", `Self-check: publikasi ${pub.id} bukan revisi FINAL.`);
+    assert.ok(rev.approvedByKey !== null, `Self-check: publikasi ${pub.id} tanpa approvedBy.`);
+    assert.equal(rev.assessmentKey, pub.assessmentKey, `Self-check: assessment publikasi ${pub.id} tidak cocok.`);
   }
+
+  // idempotensi himpunan: tidak ada duplikat anggota kelas / submission / anonCode.
+  assert.equal(new Set(XIIA_STUDENT_KEYS).size, XIIA_STUDENT_KEYS.length, "Self-check: anggota XII A duplikat.");
+  assert.equal(new Set(XIB_STUDENT_KEYS).size, XIB_STUDENT_KEYS.length, "Self-check: anggota XI B duplikat.");
+  assert.equal(new Set([...XIIA_STUDENT_KEYS, ...XIB_STUDENT_KEYS]).size, XIIA_STUDENT_KEYS.length + XIB_STUDENT_KEYS.length, "Self-check: siswa ada di dua kelas sekaligus.");
+  const studentKeys = submissions.map((s) => `${s.assessmentKey}:${s.studentKey}`);
+  assert.equal(new Set(studentKeys).size, studentKeys.length, "Self-check: submission duplikat per (asesmen, siswa).");
+  assert.equal(new Set(REVISIONS.map((r) => r.id)).size, REVISIONS.length, "Self-check: id revisi duplikat.");
+  assert.equal(new Set(PUBLICATIONS.map((p) => p.revisionId)).size, PUBLICATIONS.length, "Self-check: satu revisi terbit dua kali.");
+  assert.equal(new Set(AUDIT_EVENTS.map((a) => a.id)).size, AUDIT_EVENTS.length, "Self-check: id audit duplikat.");
+  assert.equal(new Set(AUDIT_EVENTS.map((a) => a.action)).size, 6, "Self-check: audit harus mencakup keenam action.");
 }
 
 // ---------------------------------------------------------------------------
@@ -467,15 +846,21 @@ async function seedSubmission(
     create: { assessmentId, studentId, status: spec.status, version: spec.version, submittedAt },
   });
 
+  const seededQuestionIds: string[] = [];
   for (const [orderKey, content] of Object.entries(spec.answers)) {
     const question = questions.get(Number(orderKey));
     if (!question) throw new Error(`Soal order ${orderKey} tidak ada pada assessment ${assessmentId}.`);
+    seededQuestionIds.push(question.id);
     await prisma.answer.upsert({
       where: { submissionId_questionId: { submissionId: submission.id, questionId: question.id } },
       update: { content },
       create: { submissionId: submission.id, questionId: question.id, content },
     });
   }
+  // Jawaban sisa dari seed sebelumnya dibuang agar state (mis. s008 tanpa jawaban) konsisten.
+  await prisma.answer.deleteMany({
+    where: { submissionId: submission.id, questionId: { notIn: seededQuestionIds } },
+  });
 
   return submission;
 }
@@ -492,6 +877,61 @@ function criterionOf(assessment: SeededAssessment, order: number, code: string):
   return criterion;
 }
 
+async function seedRevision(
+  spec: RevisionSpec,
+  submissionId: string,
+  assessment: SeededAssessment,
+  users: Record<string, { id: string }>,
+) {
+  const authorId = users[spec.authorKey].id;
+  const approvedById = spec.approvedByKey ? users[spec.approvedByKey].id : null;
+  const approvedAt = spec.approvedHoursAgo === null ? null : hoursAgo(spec.approvedHoursAgo);
+
+  await prisma.gradeRevision.upsert({
+    where: { id: spec.id },
+    update: {
+      submissionId,
+      authorId,
+      approvedById,
+      status: spec.status,
+      version: spec.version,
+      totalScore: spec.totalScore,
+      approvedAt,
+    },
+    create: {
+      id: spec.id,
+      submissionId,
+      authorId,
+      approvedById,
+      status: spec.status,
+      version: spec.version,
+      totalScore: spec.totalScore,
+      approvedAt,
+    },
+  });
+
+  const keptCriterionIds = spec.items.map((item) => criterionOf(assessment, item.order, item.code).id);
+  for (const item of spec.items) {
+    const questionId = questionOf(assessment, item.order).id;
+    const criterionId = criterionOf(assessment, item.order, item.code).id;
+    await prisma.gradeItem.upsert({
+      where: { revisionId_questionId_criterionId: { revisionId: spec.id, questionId, criterionId } },
+      update: { score: item.score, feedback: item.feedback, source: spec.source, aiResultId: spec.aiResultId },
+      create: {
+        revisionId: spec.id,
+        questionId,
+        criterionId,
+        score: item.score,
+        feedback: item.feedback,
+        source: spec.source,
+        aiResultId: spec.aiResultId,
+      },
+    });
+  }
+  // Item di luar matrix dibuang agar totalScore == jumlah skor tetap berlaku saat seed diulang.
+  await prisma.gradeItem.deleteMany({ where: { revisionId: spec.id, criterionId: { notIn: keptCriterionIds } } });
+}
+
 async function main() {
   verifySeedData();
 
@@ -504,8 +944,8 @@ async function main() {
     { email: "guru@demo.sch.id", name: "Bu Dewi Lestari", role: "TEACHER", identifier: "NIP-001", anonCode: "T-DEMO" },
     { email: "guru2@demo.sch.id", name: "Pak Rudi Hartono", role: "TEACHER", identifier: "NIP-002", anonCode: "T-DEMO2" },
     { email: "admin@demo.sch.id", name: "Admin Sekolah", role: "ADMIN", identifier: "NIP-ADM", anonCode: "A-DEMO" },
-    ...Array.from({ length: 6 }, (_, i) => {
-      const code = `S00${i + 1}`;
+    ...Array.from({ length: 14 }, (_, i) => {
+      const code = `S${String(i + 1).padStart(3, "0")}`;
       return {
         email: `${code.toLowerCase()}@demo.sch.id`,
         name: `Siswa ${code}`,
@@ -542,12 +982,6 @@ async function main() {
 
   const guru = users["guru"];
   const guru2 = users["guru2"];
-  const s001 = users["s001"];
-  const s002 = users["s002"];
-  const s003 = users["s003"];
-  const s004 = users["s004"];
-  const s006 = users["s006"];
-
   const xiiA = await prisma.class.upsert({
     where: { joinCode: "XIIA01" },
     update: { name: "XII A", teacherId: guru.id },
@@ -558,21 +992,28 @@ async function main() {
     update: { name: "XI B", teacherId: guru2.id },
     create: { name: "XI B", joinCode: "XIB02", teacherId: guru2.id },
   });
+  // Kelas kosong: untuk demo state kosong (belum ada anggota / belum ada asesmen).
+  await prisma.class.upsert({
+    where: { joinCode: "XIIC03" },
+    update: { name: "XII C", teacherId: guru.id },
+    create: { name: "XII C", joinCode: "XIIC03", teacherId: guru.id },
+  });
 
   const memberships = [
-    { classId: xiiA.id, studentId: users["s001"].id },
-    { classId: xiiA.id, studentId: s002.id },
-    { classId: xiiA.id, studentId: s003.id },
-    { classId: xiiA.id, studentId: s004.id },
-    { classId: xiiA.id, studentId: users["s005"].id },
-    { classId: xiB.id, studentId: users["s005"].id },
-    { classId: xiB.id, studentId: s006.id },
+    ...XIIA_STUDENT_KEYS.map((key) => ({ classId: xiiA.id, studentId: users[key].id })),
+    ...XIB_STUDENT_KEYS.map((key) => ({ classId: xiB.id, studentId: users[key].id })),
   ];
   for (const m of memberships) {
     await prisma.classMembership.upsert({
       where: { classId_studentId: m },
       update: {},
       create: m,
+    });
+  }
+  // Sisa seed lama (mis. s005 di XI B) dibersihkan per kelas agar matriks demo konsisten.
+  for (const [classId, keys] of [[xiiA.id, XIIA_STUDENT_KEYS], [xiB.id, XIB_STUDENT_KEYS]] as const) {
+    await prisma.classMembership.deleteMany({
+      where: { classId, studentId: { notIn: keys.map((k) => users[k].id) } },
     });
   }
 
@@ -613,107 +1054,36 @@ async function main() {
     questions: XIB_QUESTIONS,
   });
 
-  const studentById: Record<string, string> = {
-    s001: s001.id,
-    s002: s002.id,
-    s003: s003.id,
-    s004: s004.id,
-    s006: s006.id,
-  };
+  const assessmentByKey: Record<"uts" | "xib", SeededAssessment> = { uts, xib: xiBEsai };
+  const studentById: Record<string, string> = Object.fromEntries(
+    Object.entries(users).map(([key, user]) => [key, user.id]),
+  );
 
   const submissions: Record<string, { id: string; version: number }> = {};
   for (const spec of UTS_SUBMISSIONS) {
     const submittedAt = spec.studentKey === "s003" ? S003_SUBMITTED_AT : spec.daysAgo === null ? null : daysAgo(spec.daysAgo);
-    submissions[spec.studentKey] = await seedSubmission(
-      uts.id,
-      uts.questions,
-      spec,
-      studentById[spec.studentKey],
-      submittedAt,
-    );
+    submissions[`sub:${spec.studentKey}`] = await seedSubmission(uts.id, uts.questions, spec, studentById[spec.studentKey], submittedAt);
   }
-
   for (const spec of XIB_SUBMISSIONS) {
-    await seedSubmission(
-      xiBEsai.id,
-      xiBEsai.questions,
-      spec,
-      studentById[spec.studentKey],
-      spec.daysAgo === null ? null : daysAgo(spec.daysAgo),
-    );
+    const submittedAt = spec.daysAgo === null ? null : daysAgo(spec.daysAgo);
+    submissions[`sub:${spec.studentKey}`] = await seedSubmission(xiBEsai.id, xiBEsai.questions, spec, studentById[spec.studentKey], submittedAt);
   }
 
-  const subS001 = submissions["s001"];
-  const subS002 = submissions["s002"];
-
-  const s001Total = S001_GRADE_ITEMS.reduce((sum, i) => sum + i.score, 0);
-  await prisma.gradeRevision.upsert({
-    where: { id: "seed-grade-s001" },
-    update: {
-      submissionId: subS001.id,
-      authorId: guru.id,
-      approvedById: guru.id,
-      status: "FINAL",
-      version: 1,
-      totalScore: s001Total,
-      approvedAt: daysAgo(1),
-    },
-    create: {
-      id: "seed-grade-s001",
-      submissionId: subS001.id,
-      authorId: guru.id,
-      approvedById: guru.id,
-      status: "FINAL",
-      version: 1,
-      totalScore: s001Total,
-      approvedAt: daysAgo(1),
-    },
-  });
-
-  for (const item of S001_GRADE_ITEMS) {
-    const criterion = criterionOf(uts, item.order, item.code);
-    await prisma.gradeItem.upsert({
-      where: {
-        revisionId_questionId_criterionId: {
-          revisionId: "seed-grade-s001",
-          questionId: questionOf(uts, item.order).id,
-          criterionId: criterion.id,
-        },
-      },
-      update: { score: item.score, feedback: item.feedback, source: "MANUAL", aiResultId: null },
-      create: {
-        revisionId: "seed-grade-s001",
-        questionId: questionOf(uts, item.order).id,
-        criterionId: criterion.id,
-        score: item.score,
-        feedback: item.feedback,
-        source: "MANUAL",
-      },
+  for (const [assessment, keys] of [[uts, UTS_SUBMISSIONS], [xiBEsai, XIB_SUBMISSIONS]] as const) {
+    await prisma.submission.deleteMany({
+      where: { assessmentId: assessment.id, studentId: { notIn: keys.map((k) => studentById[k.studentKey]) } },
     });
   }
-
-  const pub = await prisma.publication.upsert({
-    where: { revisionId: "seed-grade-s001" },
-    update: {
-      assessmentId: uts.id,
-      publishedById: guru.id,
-      publishedAt: hoursAgo(20),
-    },
-    create: {
-      id: "seed-pub-s001",
-      assessmentId: uts.id,
-      revisionId: "seed-grade-s001",
-      publishedById: guru.id,
-      publishedAt: hoursAgo(20),
-    },
-  });
 
   const provider = process.env.LLM_PROVIDER ?? "openai-compatible";
   const model = process.env.LLM_MODEL ?? "";
 
-  const llmQuestions: LlmQuestion[] = [1, 2].map((order) => {
-    const question = questionOf(uts, order);
-    return {
+  for (const ai of AI_RESULTS) {
+    const assessment = assessmentByKey[ai.assessmentKey];
+    const sub = submissions[`sub:${ai.studentKey}`];
+    if (!sub) throw new Error(`AIResult ${ai.id}: submission ${ai.studentKey} tidak ada.`);
+
+    const llmQuestions: LlmQuestion[] = [...assessment.questions.entries()].map(([order, question]) => ({
       id: question.id,
       text: question.text,
       referenceAnswer: question.referenceAnswer,
@@ -724,106 +1094,82 @@ async function main() {
         minScore: c.minScore,
         maxScore: c.maxScore,
       })),
-      answer: S002_ANSWERS[order],
+      answer: ai.answers[order] ?? "",
+    }));
+
+    const aiItems = ai.items.map((item) => ({
+      questionId: questionOf(assessment, item.order).id,
+      criterionId: criterionOf(assessment, item.order, item.code).id,
+      score: item.score,
+      evidence: item.evidence,
+      rationale: item.rationale,
+      feedback: item.feedback,
+    }));
+
+    const data = {
+      submissionId: sub.id,
+      requestedById: guru.id,
+      provider,
+      model,
+      promptVersion: PROMPT_VERSION,
+      cacheKey: cacheKey({ submissionId: sub.id, version: sub.version, questions: llmQuestions, provider, model }),
+      sourceVersion: sub.version,
+      payload: { items: aiItems },
+      validationOk: ai.validationOk,
+      validationMsg: ai.validationMsg,
+      tokenUsed: ai.tokenUsed,
+      attemptedAt: hoursAgo(ai.hoursAgo),
     };
-  });
-
-  const aiItems = S002_AI_ITEMS.map((item) => ({
-    questionId: questionOf(uts, item.order).id,
-    criterionId: criterionOf(uts, item.order, item.code).id,
-    score: item.score,
-    evidence: item.evidence,
-    rationale: item.rationale,
-    feedback: item.feedback,
-  }));
-
-  await prisma.aIResult.upsert({
-    where: { id: "seed-ai-s002" },
-    update: {
-      submissionId: subS002.id,
-      requestedById: guru.id,
-      provider,
-      model,
-      promptVersion: PROMPT_VERSION,
-      cacheKey: cacheKey({
-        submissionId: subS002.id,
-        version: subS002.version,
-        questions: llmQuestions,
-        provider,
-        model,
-      }),
-      sourceVersion: subS002.version,
-      payload: { items: aiItems },
-      validationOk: true,
-      validationMsg: null,
-      tokenUsed: 912,
-      attemptedAt: hoursAgo(3),
-    },
-    create: {
-      id: "seed-ai-s002",
-      submissionId: subS002.id,
-      requestedById: guru.id,
-      provider,
-      model,
-      promptVersion: PROMPT_VERSION,
-      cacheKey: cacheKey({
-        submissionId: subS002.id,
-        version: subS002.version,
-        questions: llmQuestions,
-        provider,
-        model,
-      }),
-      sourceVersion: subS002.version,
-      payload: { items: aiItems },
-      validationOk: true,
-      validationMsg: null,
-      tokenUsed: 912,
-      attemptedAt: hoursAgo(3),
-    },
-  });
-
-  const auditEvents = [
-    {
-      id: "seed-audit-1",
-      actorId: s001.id,
-      action: "SUBMIT" as const,
-      entityType: "Submission",
-      entityId: subS001.id,
-      versionBefore: null,
-      versionAfter: 1,
-      createdAt: daysAgo(2),
-    },
-    {
-      id: "seed-audit-2",
-      actorId: guru.id,
-      action: "APPROVE" as const,
-      entityType: "GradeRevision",
-      entityId: "seed-grade-s001",
-      versionBefore: 1,
-      versionAfter: 1,
-      createdAt: daysAgo(1),
-    },
-    {
-      id: "seed-audit-3",
-      actorId: guru.id,
-      action: "PUBLISH" as const,
-      entityType: "Publication",
-      entityId: pub.id,
-      versionBefore: null,
-      versionAfter: null,
-      createdAt: hoursAgo(20),
-    },
-  ];
-
-  for (const { id, ...data } of auditEvents) {
-    await prisma.auditEvent.upsert({ where: { id }, update: data, create: { id, ...data } });
+    await prisma.aIResult.upsert({ where: { id: ai.id }, update: data, create: { id: ai.id, ...data } });
   }
 
-  await prisma.idempotencyKey.upsert({
-    where: { key: "seed-publish-s001" },
-    update: { userId: guru.id, scope: "publish" },
-    create: { key: "seed-publish-s001", userId: guru.id, scope: "publish" },
-  });
+  for (const rev of REVISIONS) {
+    const sub = submissions[`sub:${rev.studentKey}`];
+    if (!sub) throw new Error(`Revisi ${rev.id}: submission ${rev.studentKey} tidak ada.`);
+    await seedRevision(rev, sub.id, assessmentByKey[rev.assessmentKey], users);
+  }
+
+  for (const pub of PUBLICATIONS) {
+    const data = {
+      assessmentId: assessmentByKey[pub.assessmentKey].id,
+      publishedById: users[pub.publishedByKey].id,
+      publishedAt: hoursAgo(pub.hoursAgo),
+    };
+    await prisma.publication.upsert({
+      where: { revisionId: pub.revisionId },
+      update: data,
+      create: { id: pub.id, revisionId: pub.revisionId, ...data },
+    });
+  }
+
+  const resolveEntityId = (entityId: string) => {
+    if (entityId.startsWith("sub:")) return submissions[entityId]?.id ?? entityId;
+    if (entityId.startsWith("pub:")) return entityId.slice(4);
+    return entityId;
+  };
+
+  for (const spec of AUDIT_EVENTS) {
+    const data = {
+      actorId: users[spec.actorKey].id,
+      action: spec.action,
+      entityType: spec.entityType,
+      entityId: resolveEntityId(spec.entityId),
+      versionBefore: spec.versionBefore,
+      versionAfter: spec.versionAfter,
+      createdAt: hoursAgo(spec.hoursAgo),
+    };
+    await prisma.auditEvent.upsert({ where: { id: spec.id }, update: data, create: { id: spec.id, ...data } });
+  }
+
+  const idempotencyKeys = [
+    { key: "seed-publish-s001", userId: guru.id, scope: "publish" },
+    { key: "seed-approve-s001", userId: guru.id, scope: "approve" },
+    { key: "seed-submit-s008", userId: users["s008"].id, scope: "submit" },
+    { key: "seed-approve-s011", userId: guru2.id, scope: "approve" },
+  ];
+  for (const key of idempotencyKeys) {
+    await prisma.idempotencyKey.upsert({ where: { key: key.key }, update: key, create: key });
+  }
 
   console.log(`
 Seed demo selesai.
@@ -832,21 +1178,33 @@ Login: /login (password semua akun: ${DEMO_PASSWORD})
   Guru     guru@demo.sch.id   (Bu Dewi Lestari)
   Guru     guru2@demo.sch.id  (Pak Rudi Hartono)
   Admin    admin@demo.sch.id
-  Siswa    s001@demo.sch.id .. s006@demo.sch.id
+  Siswa    s001@demo.sch.id .. s014@demo.sch.id
 
-Kode join kelas: XII A = XIIA01, XI B = XIB02
+Kode join kelas: XII A = XIIA01, XI B = XIB02, XII C = XIIC03 (kosong)
 
-Status LJK (Asesmen Tengah Semester — Teks Argumentasi):
-  s001  terbit (nilai 18, revisi FINAL + publication)
-  s002  siap dinilai (jawaban terkumpul, draf AI siap diterapkan, belum ada nilai)
-  s003  terkumpul, belum dinilai (jalur manual)
-  s004  dikerjakan (IN_PROGRESS, belum dikumpulkan)
-  s005  belum mengumpulkan
-  s006  terkumpul di XI B (uji 403 guru lintas kelas)
+Matriks demo — Asesmen Tengah Semester (OPEN, XII A, guru):
+  s001  terbit          FINAL + publication (18), tampil di hasil siswa
+  s002  saran AI siap   AIResult validationOk=true, belum ada revisi
+  s003  AI gagal        AIResult validationOk=false (evidence tidak ditemukan) -> jalur manual
+  s004  menunggu sahkan revisi DRAFT dari apply AI (19), belum terbit
+  s005  jawaban kosong  nilai kosong != 0, belum dinilai
+  s006  jawaban panjang ±4.800 karakter (uji penghitung karakter), belum dinilai
+  s007  autosave        IN_PROGRESS, 1 jawaban tersimpan
+  s008  kosong          IN_PROGRESS, belum ada jawaban
+  s009  belum kumpul    anggota kelas tanpa submission (jangan ekspor 0)
+  s010  belum kumpul    anggota kelas tanpa submission (jangan ekspor 0)
 
-Asesmen lain:
+Matriks demo — Ulangan Harian Teks Eksposisi (CLOSED, XI B, guru2):
+  s011  terbit          FINAL + publication (6)
+  s012  belum dinilai    SUBMITTED tanpa revisi
+  s013  autosave        IN_PROGRESS, 1 jawaban
+
+State lain:
+  s014  siswa tanpa kelas (dashboard kosong)
+  XII C (XIIC03)         kelas kosong tanpa anggota
   Latihan — Teks Eksposisi (DRAFT, XII A): belum ada pengerjaan
-  Ulangan Harian — Teks Eksposisi (XI B, CLOSED): 1 pengumpulan
+  Audit: SUBMIT, APPLY_AI, CHANGE_GRADE, APPROVE, PUBLISH, DELETE
+  Uji 403 lintas kelas: login guru2, buka LJK asesmen XII A (mis. s001) -> ditolak
 `);
 }
 

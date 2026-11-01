@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireTeacher, route } from "@/lib/auth/guard";
 import { conflict, notFound, validationError } from "@/lib/api-error";
@@ -24,7 +25,10 @@ export const POST = route<[Ctx]>(async (req, ctx) => {
   const assessment = await prisma.assessment.findUnique({ where: { id }, select: { id: true, class: { select: { teacherId: true } } } });
   if (!assessment || assessment.class.teacherId !== teacher.id) throw notFound("Asesmen");
   const existingKey = await prisma.idempotencyKey.findUnique({ where: { key: parsed.data.idempotencyKey } });
-  if (existingKey) return ok({ published: 0, replayed: true });
+  if (existingKey) {
+    if (existingKey.userId !== teacher.id || existingKey.scope !== "publish") throw conflict("Kunci idempotensi tidak valid.");
+    return ok({ published: 0, replayed: true });
+  }
   // Ambil revisi FINAL terakhir tiap submission (revisi lama yang sudah terbit tetap ada).
   const finalRevisions = await prisma.gradeRevision.findMany({ where: { submissionId: { in: parsed.data.submissionIds }, status: "FINAL", submission: { assessmentId: id } }, orderBy: { version: "desc" }, select: { id: true, submissionId: true } });
   const latest = new Map<string, string>();
@@ -38,6 +42,11 @@ export const POST = route<[Ctx]>(async (req, ctx) => {
     if (fresh.length) await tx.publication.createMany({ data: fresh.map((r) => ({ assessmentId: id, revisionId: r.id, publishedById: teacher.id })) });
     await tx.auditEvent.create({ data: { actorId: teacher.id, action: "PUBLISH", entityType: "Assessment", entityId: id } });
     return fresh.length;
+  }).catch((error) => {
+    // Klik ganda balapan: kunci sudah dibuat transaksi lain -> anggap replay.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return null;
+    throw error;
   });
+  if (result === null) return ok({ published: 0, replayed: true });
   return ok({ published: result, replayed: false });
 });
