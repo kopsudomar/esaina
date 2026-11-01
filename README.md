@@ -147,7 +147,18 @@ prisma/         # schema.prisma, migrations/, seed.ts
 .github/workflows/ci.yml
 ```
 
-Stack: Next.js 16.4.3 (App Router), React 19.3.0, TypeScript 5, Tailwind CSS 4, shadcn/ui + Base UI + Radix UI, TanStack Query 5 / Table 8, NextAuth 4.24.15 (JWT), Prisma 7.10.1 + `@prisma/adapter-pg`, PostgreSQL (Supabase), Zod 4, Vitest 5, pnpm 10.33.2, Node 22+. Antarmuka berbahasa Indonesia dengan glassmorphism ringan dan palet navy `#203B50` / biru `#5299C7`.
+### Stack
+
+| Lapisan | Teknologi |
+|---|---|
+| Bahasa & framework | TypeScript 5, Next.js 16.4.3 (App Router), React 19.3.0 |
+| UI | Tailwind CSS 4, shadcn/ui, Base UI, Radix UI, TanStack Query 5, TanStack Table 8 |
+| Data & auth | PostgreSQL (Supabase), Prisma 7.10.1 + `@prisma/adapter-pg`, NextAuth 4.24.15 (JWT) |
+| Validasi | Zod 4 |
+| Kualitas | Vitest 5, GitHub Actions CI |
+| Runtime & deploy | Node 22+, pnpm 10.33.2, Vercel |
+
+Desain antarmuka: bahasa Indonesia, glassmorphism ringan, palet navy `#203B50` dan biru `#5299C7` di atas latar `#EEF5FC`; teks esai dan tabel selalu di permukaan hampir solid.
 
 ## Keamanan & Invarian Produk
 
