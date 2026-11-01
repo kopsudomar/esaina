@@ -23,10 +23,12 @@ type Assessment = {
   instruction: string;
   class: { id: string; name: string };
   questionCount: number;
+  durationMinutes: number;
   submission: { status: string; version: number; submittedAt: string | null } | null;
 };
 
-export function AssessmentList() {
+// `expiredIds` dihitung server: endpoint /mine tidak mengirim openedAt.
+export function AssessmentList({ expiredIds = [] }: { expiredIds?: string[] }) {
   const query = useQuery({
     queryKey: ["my-assessments"],
     queryFn: () => api.get<{ assessments: Assessment[] }>("/api/assessments/mine"),
@@ -76,6 +78,7 @@ export function AssessmentList() {
         <TableRow>
           <TableHead>Asesmen</TableHead>
           <TableHead>Soal</TableHead>
+          <TableHead>Batas waktu</TableHead>
           <TableHead>Status</TableHead>
           <TableHead className="text-right">Aksi</TableHead>
         </TableRow>
@@ -83,6 +86,7 @@ export function AssessmentList() {
       <TableBody>
         {query.data.assessments.map((a) => {
           const submitted = a.submission?.status === "SUBMITTED";
+          const expired = expiredIds.includes(a.id);
           return (
             <TableRow key={a.id}>
               <TableCell>
@@ -91,11 +95,17 @@ export function AssessmentList() {
               </TableCell>
               <TableCell className="tabular-nums">{a.questionCount}</TableCell>
               <TableCell>
-                <Badge
-                  variant={submitted ? "success" : a.submission ? "warning" : "soft"}
-                >
-                  {submitted ? "Dikumpulkan" : a.submission ? "Draf" : "Belum dimulai"}
-                </Badge>
+                {a.durationMinutes === 0 ? "Tanpa batas" : `${a.durationMinutes} menit`}
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap items-center gap-1">
+                  <Badge
+                    variant={submitted ? "success" : a.submission ? "warning" : "soft"}
+                  >
+                    {submitted ? "Dikumpulkan" : a.submission ? "Draf" : "Belum dimulai"}
+                  </Badge>
+                  {expired && !submitted ? <Badge variant="destructive">Waktu habis</Badge> : null}
+                </div>
               </TableCell>
               <TableCell className="text-right">
                 <Button

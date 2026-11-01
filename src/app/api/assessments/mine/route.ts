@@ -14,6 +14,7 @@ export const GET = route(async () => {
       id: true,
       title: true,
       instruction: true,
+      durationMinutes: true,
       class: { select: { id: true, name: true } },
       _count: { select: { questions: true } },
       submissions: {
@@ -29,6 +30,7 @@ export const GET = route(async () => {
       id: a.id,
       title: a.title,
       instruction: a.instruction,
+      durationMinutes: a.durationMinutes,
       class: a.class,
       questionCount: a._count.questions,
       submission: a.submissions[0] ?? null,

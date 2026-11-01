@@ -12,7 +12,7 @@ export const POST = route(async (req) => {
   const parsed = bodySchema.safeParse(await readJson(req));
   if (!parsed.success) throw validationError(parsed.error.flatten());
 
-  const { classId, title, instruction, questions } = parsed.data;
+  const { classId, title, instruction, durationMinutes, questions } = parsed.data;
   await requireClassOwner(classId, teacher);
 
   const created = await prisma.assessment.create({
@@ -20,6 +20,7 @@ export const POST = route(async (req) => {
       classId,
       title,
       instruction,
+      durationMinutes,
       questions: {
         create: questions.map((q) => ({
           order: q.order,
@@ -60,6 +61,7 @@ export const GET = route(async (req) => {
       status: true,
       version: true,
       openedAt: true,
+      durationMinutes: true,
       _count: { select: { questions: true, submissions: true } },
     },
   });
@@ -71,6 +73,7 @@ export const GET = route(async (req) => {
       status: a.status,
       version: a.version,
       openedAt: a.openedAt,
+      durationMinutes: a.durationMinutes,
       questionCount: a._count.questions,
       submissionCount: a._count.submissions,
     })),

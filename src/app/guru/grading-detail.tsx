@@ -121,6 +121,7 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
       api.post<{ aiResult: AiPayload; cached: boolean }>(
         `/api/submissions/${submissionId}/ai`,
       ),
+    onMutate: () => applyAi.reset(),
     onSuccess: (data) => applyAi.mutate(data.aiResult.id),
   });
 
@@ -396,7 +397,7 @@ export function GradingDetail({ submissionId }: { submissionId: string }) {
         </p>
       ) : null}
 
-      {applyAi.isSuccess ? (
+      {applyAi.isSuccess && !mutationError ? (
         <p role="status" className="text-sm text-[var(--muted-foreground)]">
           Saran AI diterapkan. Periksa dan sesuaikan skor.
         </p>

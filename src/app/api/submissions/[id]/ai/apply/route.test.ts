@@ -21,8 +21,9 @@ describe("mergeAiItems", () => {
     expect(r.totalScore).toBe(8);
   });
 
-  it("nilai manual kosong dihitung 0, bukan null", () => {
-    const r = mergeAiItems([{ ...manual, score: null }], []);
-    expect(r.totalScore).toBe(0);
+  it("nilai manual kosong tidak dihitung sebagai nol", () => {
+    const r = mergeAiItems([{ ...manual, score: null }], [{ questionId: "q2", criterionId: "c1", score: 4, feedback: "ai" }]);
+    expect(r.totalScore).toBe(4);
+    expect(r.manual).toHaveLength(1);
   });
 });

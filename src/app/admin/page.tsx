@@ -43,6 +43,36 @@ export default async function AdminHome() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
+            <CardTitle className="text-lg text-primary">Kelas</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+              Lihat semua kelas lintas guru beserta jumlah anggota dan asesmennya.
+            </p>
+            <div>
+              <Button asChild variant="soft" size="sm">
+                <Link href="/admin/classes">Buka</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg text-primary">Asesmen</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+              Pantau seluruh asesmen lintas kelas beserta status dibuka, ditutup, dan draf.
+            </p>
+            <div>
+              <Button asChild variant="soft" size="sm">
+                <Link href="/admin/assessments">Buka</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
             <CardTitle className="text-lg text-primary">Manajemen pengguna</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">

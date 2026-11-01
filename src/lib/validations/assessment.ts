@@ -29,6 +29,7 @@ export const createAssessmentSchema = z
   .object({
     title: z.string().trim().min(1, "Judul asesmen wajib diisi.").max(200),
     instruction: z.string().trim().max(2000).default(""),
+    durationMinutes: z.number().int().min(0).max(600).default(60),
     questions: z.array(questionSchema).min(1, "Asesmen butuh minimal satu soal."),
   })
   .superRefine((data, ctx) => {

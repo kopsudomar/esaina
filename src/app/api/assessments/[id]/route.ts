@@ -36,7 +36,7 @@ export const PUT = route(async (req, ctx: Ctx) => {
     throw conflict("Asesmen berubah di tab lain. Muat ulang sebelum menyimpan.");
   }
 
-  const { title, instruction, questions } = parsed.data;
+  const { title, instruction, durationMinutes, questions } = parsed.data;
   const updated = await prisma.$transaction(async (tx) => {
     await tx.question.deleteMany({ where: { assessmentId: id } });
     return tx.assessment.update({
@@ -44,6 +44,7 @@ export const PUT = route(async (req, ctx: Ctx) => {
       data: {
         title,
         instruction,
+        durationMinutes,
         version: { increment: 1 },
         questions: {
           create: questions.map((q) => ({

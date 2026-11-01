@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api-client";
@@ -82,6 +83,11 @@ export function ClassList() {
                 <p className="text-sm text-muted-foreground">
                   {k.memberCount} anggota · {k.assessmentCount} asesmen
                 </p>
+                <div>
+                  <Button asChild variant="soft" size="sm">
+                    <Link href={`/guru/classes/${k.id}`}>Kelola kelas</Link>
+                  </Button>
+                </div>
               </Card>
             </li>
           ))}

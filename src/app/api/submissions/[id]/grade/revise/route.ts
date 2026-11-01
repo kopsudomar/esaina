@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTeacher, route } from "@/lib/auth/guard";
 import { conflict } from "@/lib/api-error";
 import { ok } from "@/lib/http";
-import { teacherSubmission } from "@/lib/grading";
+import { sumScores, teacherSubmission } from "@/lib/grading";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -26,7 +26,7 @@ export const POST = route<[Ctx]>(async (_req, ctx) => {
         submissionId: id,
         authorId: teacher.id,
         version: last.version + 1,
-        totalScore: last.items.reduce((sum, i) => sum + (i.score ?? 0), 0),
+        totalScore: sumScores(last.items),
         items: { create: last.items.map((i) => ({ ...i })) },
       },
       select: { id: true, version: true, status: true, totalScore: true },

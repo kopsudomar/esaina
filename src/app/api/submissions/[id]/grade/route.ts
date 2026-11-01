@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireTeacher, route } from "@/lib/auth/guard";
 import { conflict, notFound, validationError } from "@/lib/api-error";
 import { ok, readJson } from "@/lib/http";
-import { teacherSubmission } from "@/lib/grading";
+import { sumScores, teacherSubmission, withProvenance } from "@/lib/grading";
 
 type Ctx = { params: Promise<{ id: string }> };
 const itemSchema = z.object({ questionId: z.string(), criterionId: z.string(), score: z.number().int().nullable(), feedback: z.string().max(5000).default("") });
@@ -28,12 +28,13 @@ export const PUT = route(async (req, ctx: Ctx) => {
     seen.add(item.criterionId);
     if (item.score !== null && (item.score < criterion.minScore || item.score > criterion.maxScore)) throw validationError({ score: `Skor ${item.criterionId} di luar rentang.` });
   }
-  const totalScore = parsed.data.items.reduce((sum, item) => sum + (item.score ?? 0), 0);
+  const totalScore = sumScores(parsed.data.items);
   const result = await prisma.$transaction(async (tx) => {
-    const current = await tx.gradeRevision.findFirst({ where: { submissionId: id, status: "DRAFT" }, orderBy: { version: "desc" } });
+    const current = await tx.gradeRevision.findFirst({ where: { submissionId: id, status: "DRAFT" }, orderBy: { version: "desc" }, select: { id: true, items: { select: { questionId: true, criterionId: true, score: true, feedback: true, source: true, aiResultId: true } } } });
+    const items = withProvenance(current?.items ?? [], parsed.data.items);
     const revision = current
-      ? await tx.gradeRevision.update({ where: { id: current.id }, data: { totalScore, version: { increment: 1 }, items: { deleteMany: {}, create: parsed.data.items.map((item) => ({ questionId: item.questionId, criterionId: item.criterionId, score: item.score, feedback: item.feedback })) } }, select: { id: true, version: true, status: true, totalScore: true } })
-      : await tx.gradeRevision.create({ data: { submissionId: id, authorId: teacher.id, totalScore, items: { create: parsed.data.items.map((item) => ({ questionId: item.questionId, criterionId: item.criterionId, score: item.score, feedback: item.feedback })) } }, select: { id: true, version: true, status: true, totalScore: true } });
+      ? await tx.gradeRevision.update({ where: { id: current.id }, data: { totalScore, version: { increment: 1 }, items: { deleteMany: {}, create: items } }, select: { id: true, version: true, status: true, totalScore: true } })
+      : await tx.gradeRevision.create({ data: { submissionId: id, authorId: teacher.id, totalScore, items: { create: items } }, select: { id: true, version: true, status: true, totalScore: true } });
     return revision;
   });
   return ok({ revision: result });
