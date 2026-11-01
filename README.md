@@ -104,17 +104,34 @@ Aturan validasi sebelum saran boleh dipakai:
 
 ## Arsitektur
 
+```mermaid
+flowchart LR
+  G[Guru] -->|kelas, asesmen, soal, rubrik| A[Buka asesmen]
+  A --> S[Siswa isi jawaban, autosave]
+  S --> K[Kumpulkan]
+  K --> AI[Minta saran AI, validasi ketat di server]
+  AI --> T[Guru tinjau dan ubah per soal]
+  T --> F[Sahkan FINAL, total dihitung server]
+  F --> P[Terbitkan]
+  P --> R[Revisi: draf baru, sahkan, terbit ulang]
 ```
-Guru                        Siswa                     Hasil
- │  kelas/asesmen/soal/rubrik │  gabung kelas            │
- │  buka asesmen ────────────►│  isi jawaban (autosave)  │
- │                            │  kumpulkan ──┐           │
- │  minta saran AI ◄──────────┘             │           │
- │  validasi ketat di server                │           │
- │  tinjau / ubah per soal                  │           │
- │  sahkan (FINAL, total server) ◄──────────┘           │
- │  rekap → terbitkan ────────────────────────────────►│
- │  revisi: draf baru → sahkan → terbit ulang ────────►│
+
+```mermaid
+flowchart TB
+  UI[UI Guru / Siswa / Admin] -->|fetch| API
+  subgraph Next["Next.js 16 App Router (Vercel)"]
+    API[Route Handlers src/app/api]
+    GUARD["lib/auth/guard.ts: sesi, peran, pemilik kelas"]
+    GRADE[lib/grading.ts: skor server]
+    AIA["lib/ai/adapter.ts + prompt.ts"]
+  end
+  API --> GUARD
+  API --> GRADE
+  API --> AIA
+  GUARD --> DB[(Supabase PostgreSQL via Prisma)]
+  GRADE --> DB
+  API --> DB
+  AIA --> LLM[LLM Provider]
 ```
 
 ```
