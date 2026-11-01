@@ -158,8 +158,6 @@ prisma/         # schema.prisma, migrations/, seed.ts
 | Kualitas | Vitest 5, GitHub Actions CI |
 | Runtime & deploy | Node 22+, pnpm 10.33.2, Vercel |
 
-Desain antarmuka: bahasa Indonesia, glassmorphism ringan, palet navy `#203B50` dan biru `#5299C7` di atas latar `#EEF5FC`; teks esai dan tabel selalu di permukaan hampir solid.
-
 ## Keamanan & Invarian Produk
 
 | Invarian | Penerapan |
